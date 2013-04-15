@@ -96,19 +96,20 @@ int main( int argc, char * argv[] )
   int      iPort                             = ss.getPort();
   int      iMinLogLevel                      ;
   int      iMaxLogLevel                      ;
-  char     strHost[128]                      = "127.0.0.1";
+  char     strHost[128]                      = "127.0.0.1";     // SANMIT
   // Changes recommended by celibertojr include changing dVersion to 12. See:
   // https://utlists.utexas.edu/sympa/arc/keepaway/2011-05/msg00006.html
-  double   dVersion                          = 12.0;
+  double   dVersion                          = 12.0;            // SANMIT: Changed from 12 to 15
   int      iMode                             = 0;
   int      iNr                               = 2;
   int      iReconnect                        = -1;
   int      iNumKeepers                       = 3;
   int      iNumTakers                        = 2;
-  char     strPolicy[128]                    = "random";
-  bool     bLearn                            = false;
-  char     loadWeightsFile[256]               = "";
-  char     saveWeightsFile[256]               = "";
+  char     strPolicy[128]                    = "random";        // This can be changed to learned or handcoded as well. 
+                                                                // Technically, if you pass --keeper-learn, it should get overwritten when the command line arguments are parsed
+  bool     bLearn                            = false;           // SANMIT
+  char     loadWeightsFile[256]               = "";             // I'm guessing this is where the weights will be loaded from
+  char     saveWeightsFile[256]               = "";             // And this is where they will be saved to
   bool     bInfo                             = false;
   bool     bSuppliedLogFile                  = false;
   bool     bSuppliedLogDrawFile              = false;
@@ -244,6 +245,9 @@ int main( int argc, char * argv[] )
       }
     }
   }
+
+    // ******* END OF PARSING COMMAND LINE INPUTS *******
+
   if( bInfo == true )
   {
     cout << "team         : "  << strTeamName    << endl <<
@@ -255,6 +259,9 @@ int main( int argc, char * argv[] )
             "reconnect    : "  << iReconnect     << endl ;
     Log.showLogLevels( cout );
   }
+
+  // LOGGER INFO
+
   if( bSuppliedLogFile == true )
     Log.setOutputStream( os );                   // initialize logger
   else
@@ -268,6 +275,8 @@ int main( int argc, char * argv[] )
 
   //Formations fs( strFormations, (FormationT)cs.getInitialFormation(), iNr-1 );
                                                // read formations file
+  
+  // MAIN STUFF STARTS HERE.
   WorldModel wm( &ss, &cs, NULL );              // create worldmodel
   Connection c( strHost, iPort, MAX_MSG );     // make connection with server
   ActHandler a( &c, &wm, &ss );                // link actHandler and worldmodel
@@ -280,14 +289,17 @@ int main( int argc, char * argv[] )
   double resolutions[ MAX_STATE_VARS ];
   int numFeatures = wm.keeperStateRangesAndResolutions( ranges, minValues, resolutions, 
 							iNumKeepers, iNumTakers );
-  int numActions = iNumKeepers;
+  int numActions = iNumKeepers; // So currently, the only actions for keepers is to pass to another keeper... there should also be a hold ball somewhere.
 
+  // Start a learning agent
   if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
     // (l)earned
     sa = new LinearSarsaAgent(
       numFeatures, numActions, bLearn, resolutions,
       loadWeightsFile, saveWeightsFile
     );
+    // SANMIT: Dunno what this hackery is for... 
+    // *** BEGIN HACKERY ***
   } else if (!strncmp(strPolicy, "ext=", 4)) {
     // Load extension.
     // Name should come after "ext=". Yes, this is hackish.
@@ -321,6 +333,7 @@ int main( int argc, char * argv[] )
     sa = createAgent(
       wm, numFeatures, numActions, bLearn, loadWeightsFile, saveWeightsFile
     );
+    // *** END HACKERY ***
   } else {
     // (ha)nd (ho)ld (r)andom
     sa = new HandCodedAgent( numFeatures, numActions,
@@ -331,9 +344,12 @@ int main( int argc, char * argv[] )
     cerr << "No agent!" << endl;
     return EXIT_FAILURE;
   }
+
+  // Create the keepaway player. How do you know whether it is a taker or keeper?
   KeepawayPlayer bp( sa, &a, &wm, &ss, &cs, strTeamName, 
 		     iNumKeepers, iNumTakers, dVersion, iReconnect );
 
+  // Handle sensations using a thread. This will update the world model with the information it gets ... simultaneously
 #ifdef WIN32
   DWORD id1;
   sense = CreateThread(NULL, 0, &sense_callback, &s, 0, &id1);
@@ -346,6 +362,7 @@ int main( int argc, char * argv[] )
   pthread_create( &sense, NULL, sense_callback  , &s); // start listening
 #endif
 
+  // Call main loop
   if( iMode == 0 )
     bp.mainLoop();
 

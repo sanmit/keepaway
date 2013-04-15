@@ -80,33 +80,39 @@ void KeepawayPlayer::mainLoop( )
   if(  WM->waitForNewInformation() == false )
     bContLoop =  false;
 
+  // *** BEGIN KEEPAWAY LOOP ***
   while( bContLoop )                                 // as long as server alive
   {
     Log.logWithTime( 3, "  start update_all" );
     Log.setHeader( WM->getCurrentCycle() );
     LogDraw.setTime( WM->getCurrentCycle() );
 
+    // UPDATE WORLD MODEL
     if( WM->updateAll( ) == true )
     {
       timer.restartTime();
       SoccerCommand soc;
 
+      // DETERMINE ACTION/COMMAND TO TAKE
       if ( WM->getSide() == SIDE_LEFT )
 	soc = keeper();
       else
 	soc = taker();
 
+      // COMMUNICATE THE COMMAND TAKEN. Sanmit: I might change this to mimic the communication done in HFO... or is this already like that?
       if( shallISaySomething() == true )           // shall I communicate
         {
           m_timeLastSay = WM->getCurrentTime();
           char strMsg[MAX_SAY_MSG];
-	  makeSayMessage( soc, strMsg );
+	      makeSayMessage( soc, strMsg );
           if( strlen( strMsg ) != 0 )
             Log.log( 600, "send communication string: %s", strMsg );
           WM->setCommunicationString( strMsg );
         }
       Log.logWithTime( 3, "  determined action; waiting for new info" );
       // directly after see message, will not get better info, so send commands
+      
+      // Dunno what's going on here...
       if( WM->getTimeLastSeeMessage() == WM->getCurrentTime() ||
           (SS->getSynchMode() == true && WM->getRecvThink() == true ))
       {
@@ -122,7 +128,9 @@ void KeepawayPlayer::mainLoop( )
     }  
     else
       Log.logWithTime( 3, "  HOLE no action determined; waiting for new info");
+    // END UPDATE WORLD MODEL ***
 
+    // I'm guessing this is some kind of logging... 
     int iIndex;
     double dConfThr = PS->getPlayerConfThr();
     char buffer[128];
@@ -162,9 +170,10 @@ void KeepawayPlayer::mainLoop( )
            
     // wait for new information from the server cannot say
     // bContLoop=WM->wait... since bContLoop can be changed elsewhere
-    if(  WM->waitForNewInformation() == false )
+    if(  WM->waitForNewInformation() == false )             // This basically blocks until a new sense or see comes from the server. If the timer times out, then it is over. 
         bContLoop =  false;
   }
+  // *** END MAIN LOOP ***
 
   // shutdow, print hole and number of players seen statistics
   printf("Shutting down player %d\n", WM->getPlayerNumber() );
@@ -428,6 +437,9 @@ SoccerCommand KeepawayPlayer::keeperSupport( ObjectT fastest )
   return soc;
 }
 
+// It looks like this decides where the keepaway player should look. If his confidence on the location
+// of the ball is greater than some threshold, then he will look in the direction of a player whose 
+// location he is most unsure of. Otherwise, he will look for the ball. 
 ObjectT KeepawayPlayer::chooseLookObject( double ballThr )
 {
   if ( WM->getConfidence( OBJECT_BALL ) < ballThr )

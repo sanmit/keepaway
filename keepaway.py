@@ -60,7 +60,8 @@ def launch_monitor(options):
     monitor_options = [('server-port', options.port)]
     monitor_options = [
         '--%s=%s' % option for option in monitor_options]
-    command = [relative('../rcssmonitor_qt4/src/rcssmonitor')] + monitor_options
+#command = [relative('../rcssmonitor_qt4/src/rcssmonitor')] + monitor_options
+    command = ['rcssmonitor'] + monitor_options
     # print command
     # print " ".join(command)
     Popen(command)
@@ -145,18 +146,19 @@ def launch_server(options):
 
     # More hardcoded settings for keepaway play.
     server_options += [('use_offside', 0)]
-
+#SANMIT: default should be 90 or 180? I guess I'll leave full vision for now. 
     # Vision limits. TODO What's the normal default?
     if not options.restricted_vision:
         server_options += [('visible_angle', 360)]
-
+    # clever! hehe
     server_options = [
         'server::%s=%s' % option for option in server_options]
 
     # Build rcssserver command, and fork it off.
     # TODO Locate rcssserver executable reliably.
-    command = [relative('../rcssserver/src/rcssserver')] + server_options
-    print command
+#command = [relative('../rcssserver/src/rcssserver')] + server_options
+    command = ['rcssserver'] + server_options
+    print "COMMAND: " + str(command)
     # print " ".join(command)
     popen = Popen(command)
 
@@ -387,6 +389,7 @@ def wait_for_players(port, team_name, go = False):
                     sock.sendto(
                         '(dispinit version 4)', ('127.0.0.1', port))
                 # Sample rcssclient uses buffer size 8192.
+# SANMIT: Not sure what the 127.0.0.1 is for... 
                 while True:
                     data, sender = sock.recvfrom(8192)
                     connected = True
