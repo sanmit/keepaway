@@ -212,8 +212,8 @@ int main( int argc, char * argv[] )
           iPort = Parse::parseFirstInt( &str );
           break;
         case 'q':
-	  strcpy( strPolicy, argv[i+1] );
-	  break;	  
+	      strcpy( strPolicy, argv[i+1] );
+	      break;	  
         case 'r':                                   // reconnect 1 0
           str = &argv[i+1][0];
           iReconnect = Parse::parseFirstInt( &str );
@@ -292,9 +292,11 @@ int main( int argc, char * argv[] )
   int numActions = iNumKeepers; // So currently, the only actions for keepers is to pass to another keeper... there should also be a hold ball somewhere.
 
   // Start a learning agent
+  cout << "DETERMINING TYPE OF AGENT" << endl; 
   if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
     // (l)earned
-    sa = new LinearSarsaAgent(
+      cout << "***** INITIATING A LEARNING AGENT ******" << endl;
+      sa = new LinearSarsaAgent(
       numFeatures, numActions, bLearn, resolutions,
       loadWeightsFile, saveWeightsFile
     );

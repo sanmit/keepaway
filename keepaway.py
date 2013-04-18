@@ -16,6 +16,8 @@ def launch_player(player_type, options):
     from itertools import chain
     from subprocess import Popen
 
+    print "**** PLAYER POLICY ****  " + str(getattr(options, player_type + '_policy'))
+
     # Build up the options for the player process.
     # TODO $klog_opts $kdraw_opts $kweight_opts
     player_options = dict(
