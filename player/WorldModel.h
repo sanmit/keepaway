@@ -337,7 +337,7 @@ public:
 
   // get and set methods for agent information
   ObjectT       getAgentObjectType         (                            )const;
-  int           getAgentIndex              (                            )const;
+  int           getAgentIndex              (                            )const;         // SANMIT
   bool          setAgentObjectType         ( ObjectT        o           );
   AngDeg        getAgentBodyAngleRelToNeck (                            )const;
   AngDeg        getAgentGlobalNeckAngle    (                            )const;
@@ -347,7 +347,7 @@ public:
   double        getAgentEffort             (                            )const;
   VecPosition   getAgentGlobalVelocity     (                            )const;
   double        getAgentSpeed              (                            )const;
-  VecPosition   getAgentGlobalPosition     (                            )const;
+  VecPosition   getAgentGlobalPosition     (                            )const;         // SANMIT
   bool          setAgentViewAngle          ( ViewAngleT     va          ) ;
   ViewAngleT    getAgentViewAngle          (                            )const;
   bool          setAgentViewQuality        ( ViewQualityT   vq          ) ;  
@@ -365,7 +365,7 @@ public:
 
   // get method for different information about a specific object
   Time          getTimeGlobalPosition      ( ObjectT        o                );
-  VecPosition   getGlobalPosition          ( ObjectT        o                );
+  VecPosition   getGlobalPosition          ( ObjectT        o                );         // SANMIT
   Time          getTimeGlobalVelocity      ( ObjectT        o                );
   VecPosition   getGlobalVelocity          ( ObjectT        o                );
   double        getRelativeDistance        ( ObjectT        o                );
@@ -747,10 +747,14 @@ public:
 					     ObjectT        o,
 					     double         dDist[] = NULL,
 					     double         dConfThr = -1.0  );
+  
+  bool sortClosestTo(ObjectT objs[], int numObjs, VecPosition pos, double dDist[] = NULL, double dConfThr = -1.0);
+  
   ObjectT       getClosestInSetTo          ( ObjectSetT     objectSet,
                                              ObjectT        o ,
                                              double         *dDist = NULL,
                                              double         dConfThr = -1.0  );
+  // SANMIT
   ObjectT       getClosestInSetTo          ( ObjectSetT     objectSet,
                                              VecPosition    pos,
                                              double         *dDist = NULL,
@@ -882,6 +886,7 @@ public:
   int           getTimeLastAction          (                                 );
 
   double        keeperReward               (                                 );
+  int           passerStateVars(double state[], VecPosition targetLocation);    // SANMIT
   int           keeperStateVars            ( double         state[]          );
   int           keeperStateRangesAndResolutions ( double         ranges[],
 					     double         minValues[],

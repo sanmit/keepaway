@@ -173,6 +173,47 @@ bool WorldModel::coordinateWith( ObjectT obj )
   return false;
 }
 
+// Sort objects by distance to a certain position
+// Identical to the one below, except we directly plug in a position
+bool WorldModel::sortClosestTo( ObjectT objs[], int numObjs, VecPosition pos,
+				double dDist[], double dConfThr )
+{
+  if ( dConfThr == -1.0 )
+    dConfThr = PS->getPlayerConfThr();
+
+//  if ( getConfidence( o ) < dConfThr )
+//    return false;
+
+//  VecPosition pos = getGlobalPosition( o );
+
+  double myDist[ numObjs ];
+  for ( int i = 0; i < numObjs; i++ ) {
+    if ( getConfidence( objs[ i ] ) < dConfThr )
+      return false;
+    myDist[ i ] = getGlobalPosition( objs[ i ] ).getDistanceTo( pos ); 
+  }
+
+  // Brute force sort
+  for ( int i = 0; i < numObjs - 1; i++ ) {
+    for ( int j = i + 1; j < numObjs; j++ ) {
+      if ( myDist[ j ] < myDist[ i ] ) {
+	ObjectT tmpObj = objs[ i ];
+	objs[ i ] = objs[ j ];
+	objs[ j ] = tmpObj;
+	double tmpDist = myDist[ i ];
+	myDist[ i ] = myDist[ j ];
+	myDist[ j ] = tmpDist;
+      }
+    }
+  } 
+
+  if ( dDist != NULL ) 
+    memcpy( dDist, myDist, numObjs * sizeof( double ) );
+
+  return true;
+}
+
+
 bool WorldModel::sortClosestTo( ObjectT objs[], int numObjs, ObjectT o,
 				double dDist[], double dConfThr )
 {
@@ -195,12 +236,12 @@ bool WorldModel::sortClosestTo( ObjectT objs[], int numObjs, ObjectT o,
   for ( int i = 0; i < numObjs - 1; i++ ) {
     for ( int j = i + 1; j < numObjs; j++ ) {
       if ( myDist[ j ] < myDist[ i ] ) {
-	ObjectT tmpObj = objs[ i ];
-	objs[ i ] = objs[ j ];
-	objs[ j ] = tmpObj;
-	double tmpDist = myDist[ i ];
-	myDist[ i ] = myDist[ j ];
-	myDist[ j ] = tmpDist;
+        ObjectT tmpObj = objs[ i ];
+        objs[ i ] = objs[ j ];
+        objs[ j ] = tmpObj;
+        double tmpDist = myDist[ i ];
+        myDist[ i ] = myDist[ j ];
+        myDist[ j ] = tmpDist;
       }
     }
   } 

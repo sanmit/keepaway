@@ -661,7 +661,7 @@ public:
 
   // set- and get methods for keepaway parameters
   bool   setKeepawayWidth              ( double d    )      ;
-  double getKeepawayWidth              (             ) const;
+  double getKeepawayWidth              (             ) const;       // SANMIT
   bool   setKeepawayLength             ( double d    )      ;
   double getKeepawayLength             (             ) const;
 

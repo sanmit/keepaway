@@ -44,7 +44,8 @@ class KeepawayPlayer:public BasicPlayer
 
   Time          m_timeLastSay;           /*!< last time communicated         */
   Time          m_timeStartEpisode;
-  SMDPAgent     *SA;
+  SMDPAgent     *SA;        // Holds passer policy and taker policy.
+  SMDPAgent     *SA2;       // Holds GetOpen policy. For takers, this is NULL.
 
   // methods associated with saying (defined in KeepawayPlayer.cc)
   bool          shallISaySomething        (                                  );
@@ -53,13 +54,14 @@ class KeepawayPlayer:public BasicPlayer
 
  public:
   KeepawayPlayer                          ( SMDPAgent      *sa,
-					    ActHandler     *a,
+                                            SMDPAgent      *sa2,
+					                        ActHandler     *a,
                                             WorldModel     *wm,
                                             ServerSettings *ss,
                                             PlayerSettings *cs,
                                             char           *strTeamName,
-					    int            iNumKeepers,
-					    int            iNumTakers,
+					                        int            iNumKeepers,
+					                        int            iNumTakers,
                                             double         dVersion,
                                             int            iReconnect = -1   );
 
@@ -70,7 +72,7 @@ class KeepawayPlayer:public BasicPlayer
   SoccerCommand keeperWithBall();
   SoccerCommand keeperSupport( ObjectT fastest );
   SoccerCommand interpretKeeperAction( int action );
-
+  SoccerCommand interpretTeammateAction(int action);
   ObjectT chooseLookObject( double ballThr );
 
   SoccerCommand taker();

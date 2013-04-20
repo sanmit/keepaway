@@ -127,58 +127,166 @@ int WorldModel::getTimeLastAction()
   return m_timeLastAction;
 }
 
+// Populates the state for the current agent evaluating position targetLocation
+int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
+
+    int numK = getNumKeepers();
+    int numT = getNumTakers();
+
+    int myIndex = getAgentIndex();  // I believe this will find the player index. TODO: VERIFY THIS.
+
+    // Keeper objects for teammates. Can't tell if this is just a type of if its the actual keeper... 
+    ObjectT K[ numK ];
+    for ( int i = 0; i < numK; i++ ){
+        K[ i ] = SoccerTypes::getTeammateObjectFromIndex( i );
+    }
+
+    // Taker objects for opponents
+    ObjectT T[ numT ];
+    for ( int i = 0; i < numT; i++ )
+        T[ i ] = SoccerTypes::getOpponentObjectFromIndex( i );
+
+    // Need to sort the keeper and taker lists by who is closest to targetLocation. Also need to enforce that the current agent is in slot 0, or ignored entirely
+
+    // Sort the keepers by their distance to the target location. Later, we will need to ignore the keeper that is the current agent
+    double K1Prime_dist_to_K[ numK ];
+    if ( !sortClosestTo( K, numK, targetLocation, K1Prime_dist_to_K ) )
+        return 0;
+
+    // Distance from takers to the target location
+    double K1Prime_dist_to_T[ numT ];
+    if ( !sortClosestTo( T, numT, targetLocation, K1Prime_dist_to_T ) )
+        return 0;
+
+  // Distance from each keeper to the closest opponent 
+  double nearest_Opp_dist_K[ numK ];
+  for ( int i = 1; i < numK; i++ ) {
+    VecPosition pos = getGlobalPosition( K[ i ] );      // Location of each keeper
+    for ( int j = 0; j < numT; j++ ) {
+      double tmp = getGlobalPosition( T[ j ] ).getDistanceTo( pos );    // Distance to taker j
+      if ( j == 0 || tmp < nearest_Opp_dist_K[ i ] ) {              // If this is the first iteration, or this taker is closer, set this to be the new distance
+        nearest_Opp_dist_K[ i ] = tmp;
+      }
+    }
+  }
+
+  // Angle between the target location, each teammate, and each opponent
+  double nearest_Opp_ang_K[ numK ];
+  for ( int i = 1; i < numK; i++ ) {
+    VecPosition pos = getGlobalPosition( K[ i ] );
+    for ( int j = 0; j < numT; j++ ) {
+      double tmp = targetLocation.getAngleBetweenPoints( pos, getGlobalPosition( T[ j ] ) );
+      if ( j == 0 || tmp < nearest_Opp_ang_K[ i ] ) {
+        nearest_Opp_ang_K[ i ] = tmp;
+      }
+    }
+  }
+
+    // Distance from K1 to K1'
+    double K1_dist_to_K1Prime = getAgentGlobalPosition().getDistanceTo(targetLocation);
+
+    // Minimum angle between K1, K1', and each taker 
+    double K1_minAngleTo_K1Prime;
+    for (int j = 0; j < numT; j++){
+        double tmp = getAgentGlobalPosition().getAngleBetweenPoints(targetLocation, getGlobalPosition( T[j] ) );
+        if (j == 0 || tmp < K1_minAngleTo_K1Prime){
+            K1_minAngleTo_K1Prime = tmp;
+        }
+    }
+
+    // Populate the state vector, ignoring the things above as necessary
+    // TODO: VERIFY.
+    int j = 0;
+    for (int i = 0; i < numK; i++){
+        if (i != myIndex)
+            state[j++] = K1Prime_dist_to_K[i]; 
+    }
+    for (int i = 0; i < numT; i++)
+        state[j++] = K1Prime_dist_to_T[i];
+    for (int i = 0; i < numK; i++){
+        if (i != myIndex)
+            state[j++] = nearest_Opp_dist_K[i];
+    }
+    for (int i = 0; i < numK; i++){
+        if (i != myIndex)
+            state[j++] = nearest_Opp_ang_K[i];
+    }
+    state[j++] = K1_dist_to_K1Prime;
+    state[j++] = K1_minAngleTo_K1Prime;
+
+    return j;
+
+}
+
+
+
+// SANMIT
 int WorldModel::keeperStateVars( double state[] )
 {
   ObjectT PB = getClosestInSetTo( OBJECT_SET_TEAMMATES, OBJECT_BALL );
   if ( !SoccerTypes::isTeammate( PB ) )
     return 0;
 
+  // Center of field
   VecPosition C = getKeepawayRect().getPosCenter();
 
+  // Distance of player closest to the ball from the center. So technically when this is called, this agent is the closest to the ball. 
   double WB_dist_to_C = getGlobalPosition( PB ).getDistanceTo( C );
   
   int numK = getNumKeepers();
   int numT = getNumTakers();
 
+  // Keeper objects for teammates. Can't tell if this is just a type of if its the actual keeper... 
   ObjectT K[ numK ];
   for ( int i = 0; i < numK; i++ )
     K[ i ] = SoccerTypes::getTeammateObjectFromIndex( i );
 
+  // Taker objects for opponents
   ObjectT T[ numT ];
   for ( int i = 0; i < numT; i++ )
     T[ i ] = SoccerTypes::getOpponentObjectFromIndex( i );
 
+    // Note that these next two MUST BE DONE in order to sort the keeper and taker lists appropriately
+
+  // Distances from other keepers to player with the ball. I'm guessing the 0th entry should be 0 since he has the ball.  
   double WB_dist_to_K[ numK ];
   if ( !sortClosestTo( K, numK, PB, WB_dist_to_K ) )
     return 0;
   
+  // Distances from takers to the person with the ball. This is probably almost directly transferrable. 
   double WB_dist_to_T[ numT ];
   if ( !sortClosestTo( T, numT, PB, WB_dist_to_T ) )
     return 0;
 
+    // END of MUST BE DONE
+
+  // Distance from the keepers to the center
   double dist_to_C_K[ numK ];
   for ( int i = 1; i < numK; i++ ) {
     dist_to_C_K[ i ] = getGlobalPosition( K[ i ] ).getDistanceTo( C );
   }
 
+  // Distance from the takers to the center
   double dist_to_C_T[ numT ];
   for ( int i = 0; i < numT; i++ ) {
     dist_to_C_T[ i ] = getGlobalPosition( T[ i ] ).getDistanceTo( C );
   }
 
+  // Distance from each keeper to the closest opponent 
   double nearest_Opp_dist_K[ numK ];
-  VecPosition posPB = getGlobalPosition( PB );
   for ( int i = 1; i < numK; i++ ) {
-    VecPosition pos = getGlobalPosition( K[ i ] );
+    VecPosition pos = getGlobalPosition( K[ i ] );      // Location of each keeper
     for ( int j = 0; j < numT; j++ ) {
-      double tmp = getGlobalPosition( T[ j ] ).getDistanceTo( pos );
-      if ( j == 0 || tmp < nearest_Opp_dist_K[ i ] ) {
+      double tmp = getGlobalPosition( T[ j ] ).getDistanceTo( pos );    // Distance to taker j
+      if ( j == 0 || tmp < nearest_Opp_dist_K[ i ] ) {              // If this is the first iteration, or this taker is closer, set this to be the new distance
         nearest_Opp_dist_K[ i ] = tmp;
       }
     }
   }
-
+  
+  // Angle between this keeper, each teammate, and each opponent
   double nearest_Opp_ang_K[ numK ];
+  VecPosition posPB = getGlobalPosition( PB );
   for ( int i = 1; i < numK; i++ ) {
     VecPosition pos = getGlobalPosition( K[ i ] );
     for ( int j = 0; j < numT; j++ ) {
@@ -189,6 +297,7 @@ int WorldModel::keeperStateVars( double state[] )
     }
   }
 
+  // Ahh. This is where the filter out the keeper at position 0. But how can i fool the system into thinking the current agent is at the target location... 
   int j = 0;
   state[ j++ ] = WB_dist_to_C;
   for ( int i = 1; i < numK; i++ )

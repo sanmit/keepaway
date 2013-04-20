@@ -282,7 +282,9 @@ int main( int argc, char * argv[] )
   ActHandler a( &c, &wm, &ss );                // link actHandler and worldmodel
   SenseHandler s( &c, &wm, &ss, &cs );         // link senseHandler with wm
 
-  SMDPAgent *sa = NULL;
+  SMDPAgent *sa = NULL;     // This will store the policy for Pass (and also the takers)
+
+  SMDPAgent *sa2 = NULL;    // This will store the policy for GetOpen
 
   double ranges[ MAX_STATE_VARS ];
   double minValues[ MAX_STATE_VARS ];
@@ -295,11 +297,12 @@ int main( int argc, char * argv[] )
   cout << "DETERMINING TYPE OF AGENT" << endl; 
   if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
     // (l)earned
-      cout << "***** INITIATING A LEARNING AGENT ******" << endl;
+      cout << "***** INITIATING A LEARNING AGENT" << bLearn << " ******" << endl;
       sa = new LinearSarsaAgent(
       numFeatures, numActions, bLearn, resolutions,
       loadWeightsFile, saveWeightsFile
     );
+      //sa2 = new GetOpenAgent();                 // TODO:SANMIT
     // SANMIT: Dunno what this hackery is for... 
     // *** BEGIN HACKERY ***
   } else if (!strncmp(strPolicy, "ext=", 4)) {
@@ -347,8 +350,13 @@ int main( int argc, char * argv[] )
     return EXIT_FAILURE;
   }
 
-  // Create the keepaway player. How do you know whether it is a taker or keeper?
-  KeepawayPlayer bp( sa, &a, &wm, &ss, &cs, strTeamName, 
+    //cout << "FIELD WIDTH: " << ss.getKeepawayWidth() << endl;
+    //cout << "FIELD LENGTH: " << ss.getKeepawayLength() << endl;
+
+    ss.setKeepawayWidth(50);
+
+  // Create the keepaway player. How do you know whether it is a taker or keeper? The team name determines the player type. 
+  KeepawayPlayer bp( sa, sa2, &a, &wm, &ss, &cs, strTeamName, 
 		     iNumKeepers, iNumTakers, dVersion, iReconnect );
 
   // Handle sensations using a thread. This will update the world model with the information it gets ... simultaneously

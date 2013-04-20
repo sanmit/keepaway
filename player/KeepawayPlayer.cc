@@ -36,7 +36,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern LoggerDraw LogDraw;
 
-KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, ActHandler* act, WorldModel *wm, 
+KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, SMDPAgent* sa2, ActHandler* act, WorldModel *wm, 
 				ServerSettings *ss, PlayerSettings *ps,
 				char* strTeamName, int iNumKeepers, int iNumTakers,
 				double dVersion, int iReconnect )
@@ -45,6 +45,7 @@ KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, ActHandler* act, WorldModel *wm,
   char str[MAX_MSG];
   
   SA            = sa;
+  SA2           = sa2;
   ACT           = act;
   WM            = wm;
   SS            = ss;
@@ -384,6 +385,13 @@ SoccerCommand KeepawayPlayer::keeperWithBall()
   return interpretKeeperAction( action );
 }
 
+// Interprets the action for teammate motion to a grid point. This should ensure consistency with the policy search function's ordering
+SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
+
+
+}
+
+
 SoccerCommand KeepawayPlayer::interpretKeeperAction( int action )
 {
   SoccerCommand soc;
@@ -416,6 +424,75 @@ SoccerCommand KeepawayPlayer::interpretKeeperAction( int action )
 
 SoccerCommand KeepawayPlayer::keeperSupport( ObjectT fastest )
 {
+    // If we are using the learned getopen policy
+if (SA2){    
+  
+  // Need to calculate state variables for each point on the grid, and learn to map those state-points to values using policy search  
+  // Then, need to plug in state variables into function approximator (neural net) to determine value. 
+  // Choose the action that has the highest value
+  // This action taken will receive feedback(reward).   
+
+  int action;
+  int numK = WM->getNumKeepers();
+  int numT = WM->getNumTakers();
+
+  const int NUM_PASSER_STATE_VARS = (3 * (numK - 1)) + numT + 2;  
+
+  double state[NUM_PASSER_STATE_VARS]; 
+
+  if ( WM->keeperStateVars( state ) > 0 ) { // if we can calculate state vars
+   
+      double fieldWidth = SS->getKeepawayWidth() / 2;
+      double fieldLength = SS->getKeepawayLength() / 2;
+    
+// length is x axis
+
+      // Map these states to each grid point.
+      for (double l=-7.0; l< 8; l+=3.5){
+        for (double w=-7.0; w < 8; w+= 3.5){
+             
+             VecPosition targetLocation(l, w);  // K1'
+
+             // Populate state. 
+            WM->passerStateVars(state, targetLocation);
+
+            // DO SOMETHING!
+
+            // Evaluate state
+
+            
+
+
+        }
+      }
+      
+    // Choose best state.
+
+      // Call startEpisode() on the first SMDP step
+    if ( WM->getTimeLastAction() == UnknownTime ) {
+      action = SA2->startEpisode( state );
+    }
+    else if ( WM->getTimeLastAction() == WM->getCurrentCycle() - 1 && 
+	      WM->getLastAction() > 0 ) {   // if we were in the middle of a pass last cycle (or in this case moving to a location? -- maybe I should ditch this... )
+      action = WM->getLastAction();         // then we follow through with it
+    }
+    // Call step() on all but first SMDP step
+    else {
+      action = SA2->step( WM->keeperReward(), state );
+    }
+    WM->setLastAction( action );
+  }
+  else { // if we don't have enough info to calculate state vars
+    action = 0;  // hold ball 
+    LogDraw.logText( "state", VecPosition( 35, 25 ),
+		     "clueless",
+		     1, COLOR_RED );
+  }
+
+  //return interpretKeeperAction( action );
+}
+
+// Otherwise handcoded getopen
   SoccerCommand soc;
 
   int iCycles = WM->predictNrCyclesToObject( fastest, OBJECT_BALL );
@@ -468,6 +545,7 @@ SoccerCommand KeepawayPlayer::taker()
   LogDraw.logCircle( "ball pos", WM->getBallPos(),
 		     1.1, 11, false, COLOR_RED, WM->getConfidence( OBJECT_BALL ) );
 
+  //cout << "TAKER POSITION: " << WM->getAgentGlobalPosition() << endl;
   // If we don't know where the ball is, search for it.
   if ( WM->getConfidence( OBJECT_BALL ) <
        PS->getBallConfThr() ) {
