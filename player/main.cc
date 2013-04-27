@@ -297,13 +297,17 @@ int main( int argc, char * argv[] )
   cout << "DETERMINING TYPE OF AGENT" << endl; 
   if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
     // (l)earned
-      cout << "***** INITIATING A LEARNING AGENT" << bLearn << " ******" << endl;
+      cout << "***** INITIATING A LEARNING AGENT " << bLearn << " ******" << endl;
+      cout << "Loading weights from: " << loadWeightsFile << endl;
+      cout << "Saving weights to: " << saveWeightsFile << endl;
       sa = new LinearSarsaAgent(
       numFeatures, numActions, bLearn, resolutions,
       loadWeightsFile, saveWeightsFile
     );
-      //sa2 = new GetOpenAgent();                 // TODO:SANMIT
-    // SANMIT: Dunno what this hackery is for... 
+
+      sa2 = new LinearSarsaAgent(numFeatures, 25, bLearn, resolutions, loadWeightsFile, saveWeightsFile);                // TODO:SANMIT
+      cout << "PASSING AGENT CREATED" << endl;
+      // SANMIT: Dunno what this hackery is for... 
     // *** BEGIN HACKERY ***
   } else if (!strncmp(strPolicy, "ext=", 4)) {
     // Load extension.
@@ -353,7 +357,7 @@ int main( int argc, char * argv[] )
     //cout << "FIELD WIDTH: " << ss.getKeepawayWidth() << endl;
     //cout << "FIELD LENGTH: " << ss.getKeepawayLength() << endl;
 
-    ss.setKeepawayWidth(50);
+//    ss.setKeepawayWidth(50);
 
   // Create the keepaway player. How do you know whether it is a taker or keeper? The team name determines the player type. 
   KeepawayPlayer bp( sa, sa2, &a, &wm, &ss, &cs, strTeamName, 
@@ -371,7 +375,7 @@ int main( int argc, char * argv[] )
 #else
   pthread_create( &sense, NULL, sense_callback  , &s); // start listening
 #endif
-
+    cout << "STARTING AGENT MAIN LOOP" << endl;
   // Call main loop
   if( iMode == 0 )
     bp.mainLoop();

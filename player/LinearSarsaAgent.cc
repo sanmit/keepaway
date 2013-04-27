@@ -138,6 +138,7 @@ void LinearSarsaAgent::endEpisode( double reward )
     double delta = reward - Q[ lastAction ];
     updateWeights( delta );
   }
+  // SANMIT EDIT: Changed 200 to 5 in order to see that saving is working... need to find a better way to do this... 
   if ( bLearning && bSaveWeights && rand() % 200 == 0 ) {
     saveWeights( weightsFile );
   }

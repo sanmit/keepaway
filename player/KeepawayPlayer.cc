@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Parse.h"
 #include "SayMsgEncoder.h"
 #include <cstring>
-
+#include "stdlib.h"
 extern LoggerDraw LogDraw;
 
 KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, SMDPAgent* sa2, ActHandler* act, WorldModel *wm, 
@@ -175,6 +175,10 @@ void KeepawayPlayer::mainLoop( )
         bContLoop =  false;
   }
   // *** END MAIN LOOP ***
+
+
+// SANMIT TODO: SAVE WEIGHTS OF PLAYER HERE.
+
 
   // shutdow, print hole and number of players seen statistics
   printf("Shutting down player %d\n", WM->getPlayerNumber() );
@@ -388,6 +392,28 @@ SoccerCommand KeepawayPlayer::keeperWithBall()
 // Interprets the action for teammate motion to a grid point. This should ensure consistency with the policy search function's ordering
 SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
 
+    double dDistDashBack = 2;
+
+    SoccerCommand soc;
+    
+    int counter = 0;
+
+    for (double l=-7.0; l< 8; l+=3.5){
+        for (double w=-7.0; w < 8; w+= 3.5){
+            if (counter == action){
+                VecPosition destination(l, w);
+                soc = moveToPos(destination, PS->getPlayerWhenToTurnAngle(), dDistDashBack);
+            }
+            counter++;
+        }
+    }
+    //cout << "Total actions: " << counter << endl;
+
+    ACT->putCommandInQueue(soc);
+    //ACT->putCommandInQueue( turnNeckToPoint( WM->getKeepawayRect().getPosCenter(), soc ) ); // Look center
+    ACT->putCommandInQueue( turnNeckToObject( OBJECT_BALL, soc ) );     // Look for ball
+    
+    return soc;
 
 }
 
@@ -422,10 +448,29 @@ SoccerCommand KeepawayPlayer::interpretKeeperAction( int action )
   return soc;
 }
 
+// Checks if the player 
+bool KeepawayPlayer::reachedPosition(int action, double epsilon){
+    int counter = 0;
+    double distance;
+
+    for (double l=-7.0; l< 8; l+=3.5){
+        for (double w=-7.0; w < 8; w+= 3.5){
+            if (counter == action){
+                VecPosition destination(l, w);
+                distance = destination.getDistanceTo(WM->getAgentGlobalPosition());
+            }
+            counter++;
+        }
+    }
+
+    return (distance < epsilon);
+
+}
+
 SoccerCommand KeepawayPlayer::keeperSupport( ObjectT fastest )
 {
     // If we are using the learned getopen policy
-if (SA2){    
+if (SA2){  // SA2    
   
   // Need to calculate state variables for each point on the grid, and learn to map those state-points to values using policy search  
   // Then, need to plug in state variables into function approximator (neural net) to determine value. 
@@ -438,9 +483,11 @@ if (SA2){
 
   const int NUM_PASSER_STATE_VARS = (3 * (numK - 1)) + numT + 2;  
 
+//  double state[ MAX_STATE_VARS ];           // For Tile SARSA on keeper w/ ball state space
   double state[NUM_PASSER_STATE_VARS]; 
+    
 
-  if ( WM->keeperStateVars( state ) > 0 ) { // if we can calculate state vars
+//  if ( WM->keeperStateVars( state ) > 0 ) { // For Tile SARSA.. if we can calculate the state space
    
       double fieldWidth = SS->getKeepawayWidth() / 2;
       double fieldLength = SS->getKeepawayLength() / 2;
@@ -466,8 +513,21 @@ if (SA2){
         }
       }
       
-    // Choose best state.
+    // Choose best action.
 
+      // Random action if we are just starting or if we have reach the random point
+    if (WM->getTimeLastAction() == UnknownTime || reachedPosition(WM->getLastAction())){
+        action = rand() % 25;    
+        WM->setLastAction(action);
+    }
+    // Otherwise keep the same action
+    else {
+        action = WM->getLastAction();
+    }
+
+    // Need to change reward and WM->get/set Last action maybe? since these are on separate MDPs?
+
+        /*
       // Call startEpisode() on the first SMDP step
     if ( WM->getTimeLastAction() == UnknownTime ) {
       action = SA2->startEpisode( state );
@@ -483,13 +543,14 @@ if (SA2){
     WM->setLastAction( action );
   }
   else { // if we don't have enough info to calculate state vars
-    action = 0;  // hold ball 
+    //action = //WM->getLastAction();  //
+      return moveToPos(WM->getAgentGlobalPosition(), PS->getPlayerWhenToTurnAngle(), 2.0); // stay where you are
     LogDraw.logText( "state", VecPosition( 35, 25 ),
 		     "clueless",
 		     1, COLOR_RED );
   }
-
-  //return interpretKeeperAction( action );
+*/
+  return interpretTeammateAction( action );
 }
 
 // Otherwise handcoded getopen

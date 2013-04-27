@@ -33,7 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SMDP_AGENT
 
 #define MAX_STATE_VARS         64
-#define MAX_ACTIONS            10
+#define MAX_ACTIONS            10   // SANMIT: Changed from 10 to 25 at one point
 
 class SMDPAgent
 {

@@ -67,6 +67,9 @@ class KeepawayPlayer:public BasicPlayer
 
   void          mainLoop                  (                                  );
 
+    // facility methods
+  bool reachedPosition(int action, double epsilon = 0.5);
+
   // behaviors
   SoccerCommand keeper();
   SoccerCommand keeperWithBall();

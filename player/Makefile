@@ -1808,7 +1808,9 @@ KeepawayPlayer.o: KeepawayPlayer.cc KeepawayPlayer.h BasicPlayer.h \
  /usr/include/c++/4.4/bits/stl_vector.h \
  /usr/include/c++/4.4/bits/stl_bvector.h \
  /usr/include/c++/4.4/bits/vector.tcc /usr/include/c++/4.4/cstring \
- /usr/include/string.h
+ /usr/include/string.h /usr/include/stdlib.h \
+ /usr/include/bits/waitflags.h /usr/include/bits/waitstatus.h \
+ /usr/include/alloca.h
 HandCodedAgent.o: HandCodedAgent.cc /usr/include/string.h \
  /usr/include/features.h /usr/include/bits/predefs.h \
  /usr/include/sys/cdefs.h /usr/include/bits/wordsize.h \
