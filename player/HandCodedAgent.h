@@ -55,6 +55,10 @@ class HandCodedAgent:public SMDPAgent
   int  step( double reward, double state[] );
   void endEpisode( double reward );
   void setParams(int iCutoffEpisodes, int iStopLearningEpisodes){exit(1);} //*met 8/16/05
+
+  // Dummy methods
+  bool saveWeights(char *filename) {return false; }
+  int getLastAction() {return 0; }   // dummy method. do not use!
 } ;
 
 #endif

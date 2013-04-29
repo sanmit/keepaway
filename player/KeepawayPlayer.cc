@@ -478,43 +478,22 @@ if (SA2){  // SA2
   // This action taken will receive feedback(reward).   
 
   int action;
-  int numK = WM->getNumKeepers();
-  int numT = WM->getNumTakers();
-
-  const int NUM_PASSER_STATE_VARS = (3 * (numK - 1)) + numT + 2;  
-
-//  double state[ MAX_STATE_VARS ];           // For Tile SARSA on keeper w/ ball state space
-  double state[NUM_PASSER_STATE_VARS]; 
-    
-
-//  if ( WM->keeperStateVars( state ) > 0 ) { // For Tile SARSA.. if we can calculate the state space
-   
-      double fieldWidth = SS->getKeepawayWidth() / 2;
-      double fieldLength = SS->getKeepawayLength() / 2;
-    
+  //int numK = WM->getNumKeepers();
+  //int numT = WM->getNumTakers();
+//      double fieldWidth = SS->getKeepawayWidth() / 2;
+//      double fieldLength = SS->getKeepawayLength() / 2;    
 // length is x axis
 
-      // Map these states to each grid point.
-      for (double l=-7.0; l< 8; l+=3.5){
-        for (double w=-7.0; w < 8; w+= 3.5){
-             
-             VecPosition targetLocation(l, w);  // K1'
 
-             // Populate state. 
-            WM->passerStateVars(state, targetLocation);
+  //const int NUM_PASSER_STATE_VARS = (3 * (numK - 1)) + numT + 2;  
+  const int NUM_PASSER_FEATS = 35;
+  double state[NUM_PASSER_FEATS]; 
+    
 
-            // DO SOMETHING!
-
-            // Evaluate state
-
-            
+  if ( WM->passerStateVars( state ) > 0 ) {
 
 
-        }
-      }
-      
-    // Choose best action.
-
+/*
       // Random action if we are just starting or if we have reach the random point
     if (WM->getTimeLastAction() == UnknownTime || reachedPosition(WM->getLastAction())){
         action = rand() % 25;    
@@ -524,32 +503,32 @@ if (SA2){  // SA2
     else {
         action = WM->getLastAction();
     }
-
+*/
     // Need to change reward and WM->get/set Last action maybe? since these are on separate MDPs?
-
-        /*
       // Call startEpisode() on the first SMDP step
-    if ( WM->getTimeLastAction() == UnknownTime ) {
-      action = SA2->startEpisode( state );
+    if (SA2->getLastAction() == -1){
+        action = SA2->startEpisode(state);
+        WM->setLastTeammateAction(action);
     }
-    else if ( WM->getTimeLastAction() == WM->getCurrentCycle() - 1 && 
-	      WM->getLastAction() > 0 ) {   // if we were in the middle of a pass last cycle (or in this case moving to a location? -- maybe I should ditch this... )
-      action = WM->getLastAction();         // then we follow through with it
+    // If we were moving to a position, keep going to it. Remember these are SMDP actions.
+    else if (!reachedPosition(SA2->getLastAction())){
+        action = SA2->getLastAction();
     }
-    // Call step() on all but first SMDP step
+    // Otherwise step and figure out a new action
     else {
-      action = SA2->step( WM->keeperReward(), state );
+        action = SA2->step(WM->keeperTeammateReward(), state);
+        WM->setLastTeammateAction(action);
     }
-    WM->setLastAction( action );
   }
   else { // if we don't have enough info to calculate state vars
-    //action = //WM->getLastAction();  //
-      return moveToPos(WM->getAgentGlobalPosition(), PS->getPlayerWhenToTurnAngle(), 2.0); // stay where you are
+   // action = WM->getLastTeammateAction();
+    //if (action == -1)
+        return moveToPos(WM->getAgentGlobalPosition(), PS->getPlayerWhenToTurnAngle(), 2.0); // stay where you are
     LogDraw.logText( "state", VecPosition( 35, 25 ),
 		     "clueless",
 		     1, COLOR_RED );
   }
-*/
+
   return interpretTeammateAction( action );
 }
 

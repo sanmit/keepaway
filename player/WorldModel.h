@@ -249,6 +249,9 @@ private:
   int           m_lastAction;
   int           m_timeLastAction;
 
+  int           m_lastTeammateAction;
+  int           m_timeLastTeammateAction;
+
   // keepaway region
   Rect          m_keepawayRect;
   double        m_moveSpeed; 
@@ -885,7 +888,13 @@ public:
   int           getLastAction              (                                 );
   int           getTimeLastAction          (                                 );
 
+  void          setLastTeammateAction       ( int iAction );
+  int           getLastTeammateAction       (             );
+  int           getTimeLastTeammateAction   (             );
+  double        keeperTeammateReward();
+
   double        keeperReward               (                                 );
+  int           passerStateVars(double state[]);
   int           passerStateVars(double state[], VecPosition targetLocation);    // SANMIT
   int           keeperStateVars            ( double         state[]          );
   int           keeperStateRangesAndResolutions ( double         ranges[],

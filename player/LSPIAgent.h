@@ -11,14 +11,16 @@
         - Need some way of loading, saving, and updating list of samples
         - Accessing a column:  .col(index)
 
-        - Refactor lastBasisFeature to be a VectorXd
 
 */
 
 #define NUM_FEATURES 35     // 10 state variables + 25 binary action variables
 #define NUM_STATE_FEAT 10
 #define NUM_ACTIONS 25
-#define MAX_CAPACITY 2097152  // 2MB. Could probably raise this =) 
+#define MAX_CAPACITY 16777216 // 16MB   //2097152  // 2MB. Could probably raise this =) 
+
+using namespace Eigen;
+using namespace std;
 
 class LSPIAgent:public SMDPAgent
 {
@@ -29,7 +31,7 @@ class LSPIAgent:public SMDPAgent
   int epochNum;
 
   int lastAction;
-  double lastBasisFeature[NUM_FEATURES];    // Stores the last state-action pair
+  VectorXd lastBasisFeature;//(NUM_FEATURES);    // Stores the last state-action pair
 
   double alpha;
   double gamma;     // Used. Default to one. 
@@ -44,13 +46,8 @@ class LSPIAgent:public SMDPAgent
     MatrixXd A;
     VectorXd b;
     
-
-  // Load / Save weights from/to disk
-  bool loadWeights( char *filename );
-  bool saveWeights( char *filename );
-
   int  selectAction();              // Select argmaxQ with probability 1-epsilon, random otherwise
-  void computeQ( double[] state); // fullState is the stateFeatures. actions will be added inside the function?
+  void computeQ( double state[]); // fullState is the stateFeatures. actions will be added inside the function?
   
   double computeQa(VectorXd features);  // Returns the value of taking a certain action in a certain state, which is parameterized by the features vector 
   
@@ -71,6 +68,17 @@ class LSPIAgent:public SMDPAgent
   int  step( double reward, double state[] );       // 
   void endEpisode( double reward );
   void setParams(int iCutoffEpisodes, int iStopLearningEpisodes);
+
+  // Accessors
+  int getLastAction() {return lastAction; }
+
+  // Functions
+  bool loadWeights( char *filename );
+  bool saveWeights( char *filename );
+
+  bool saveExperiences(char *filename);
+  bool loadExperiences(char *filename);
+
 } ;
 
 #endif

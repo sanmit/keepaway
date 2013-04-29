@@ -127,6 +127,48 @@ int WorldModel::getTimeLastAction()
   return m_timeLastAction;
 }
 
+double WorldModel::keeperTeammateReward() {
+    double reward = getCurrentCycle() - getTimeLastTeammateAction();
+    return reward;
+}
+
+void WorldModel::setLastTeammateAction(int iAction){
+    m_lastTeammateAction = iAction;
+    m_timeLastTeammateAction = 
+        ( iAction == UnknownIntValue ) ? UnknownTime : getCurrentCycle();
+}
+
+int WorldModel::getLastTeammateAction() {
+    return m_lastTeammateAction;
+}
+
+int WorldModel::getTimeLastTeammateAction() {
+    return m_timeLastTeammateAction;
+}
+
+// Populates the state vector for all future positions
+int WorldModel::passerStateVars(double state[]){
+  // HARDCODED: Number of states per position is 10. 
+  int index = 0;
+  const int numStates = 10; 
+  for (double l=-7.0; l< 8; l+=3.5){
+    for (double w=-7.0; w < 8; w+= 3.5){
+         
+        VecPosition targetLocation(l, w); 
+        double actionState[10];      
+        
+        // Find values for this state. 
+        passerStateVars(actionState, targetLocation);
+
+        // Populate into whole state vector
+        for (int i = 0; i < numStates; i++){
+            state[index++] = actionState[i];
+        }
+    }
+  }
+  return index;
+}
+
 // Populates the state for the current agent evaluating position targetLocation
 int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
 

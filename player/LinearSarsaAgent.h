@@ -37,10 +37,9 @@ class LinearSarsaAgent:public SMDPAgent
   int nonzeroTracesInverse[ RL_MEMORY_SIZE ];
 
   collision_table *colTab;
-
-  // Load / Save weights from/to disk
+  
+  // Load weights. Should only be done while initializing, or internally
   bool loadWeights( char *filename );
-  bool saveWeights( char *filename );
 
   // Value function methods for CMACs
   int  selectAction();
@@ -70,6 +69,14 @@ class LinearSarsaAgent:public SMDPAgent
   int  step( double reward, double state[] );
   void endEpisode( double reward );
   void setParams(int iCutoffEpisodes, int iStopLearningEpisodes);
+    
+  // Accessors
+  int getLastAction() {return lastAction; }
+  
+  // Save weights to disk
+  bool saveWeights( char *filename );
+
+
 } ;
 
 #endif

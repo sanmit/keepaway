@@ -7,8 +7,11 @@
 #include "LSPIAgent.h"
 #include "LoggerDraw.h"
 #include <Eigen/Dense>
+#include <iostream>
+#include <fstream>
 
 using namespace std;
+using namespace Eigen;
 
 // If all is well, there should be no mention of anything keepaway- or soccer-
 // related in this file. 
@@ -19,8 +22,10 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
 				    char *loadWeightsFile, char *saveWeightsFile ):
   SMDPAgent( numFeatures, numActions )
 {
+  // This will determine if we are training/learning, or just exploiting/moving randomly  
   bLearning = bLearn;
 
+  // Save only the weights!
   if ( bLearning && strlen( saveWeightsFile ) > 0 ) {
     strcpy( weightsFile, saveWeightsFile );
     bSaveWeights = true;
@@ -29,17 +34,27 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
     bSaveWeights = false;
   }
 
-  alpha = 0.125;
+//  alpha = 0.125;
   gamma = 1.0;
-  lambda = 0;
-  epsilon = 0.01;
+//  lambda = 0;
+  epsilon = 0; //0.01;
 
   epochNum = 0;
   lastAction = -1;
+  lastBasisFeature = VectorXd::Constant(NUM_FEATURES, 0);
 
 
-  if ( strlen( loadWeightsFile ) > 0 )
+  D.reserve(MAX_CAPACITY);
+  A = MatrixXd::Constant(NUM_FEATURES, NUM_FEATURES, 0);
+  b = VectorXd::Constant(NUM_FEATURES, 0);
+
+  if ( strlen( loadWeightsFile ) > 0 ){
     loadWeights( loadWeightsFile );
+  }
+  else{
+    // Random policy (weights 0)
+    weights = VectorXd::Constant(NUM_FEATURES, 0);  
+  }
 }
 
 
@@ -52,19 +67,19 @@ int LSPIAgent::startEpisode( double state[] )
     lastAction = selectAction();
     
     // Populate lastBasisFeature vector
-    double startIndex = lastAction * NUM_STATE_FEAT; 
+    int startIndex = lastAction * NUM_STATE_FEAT; 
     // first populate the states
     for (int i = 0; i < NUM_STATE_FEAT; i++){
-         lastBasisFeature[i] = state[startIndex];
+         lastBasisFeature(i) = state[startIndex];
          startIndex++;
     }
     // and then the actions
     int counter = 0;
     for (int i = NUM_STATE_FEAT; i < NUM_FEATURES; i++){
         if (counter == lastAction)
-            lastBasisFeature[i] = 1;
+            lastBasisFeature(i) = 1;
         else
-            lastBasisFeature[i] = 0;
+            lastBasisFeature(i) = 0;
         counter++;
     }        
 
@@ -80,8 +95,8 @@ int LSPIAgent::step( double reward, double state[] )
     // This adds s, a
     VectorXd stateAction(NUM_FEATURES);
     for (int i = 0; i < NUM_FEATURES; i++){
-        D.push_back(lastBasisFeature[i]);
-        stateAction(i) = lastBasisFeature[i];
+        D.push_back(lastBasisFeature(i));
+        stateAction(i) = lastBasisFeature(i);
     }
     // This adds r
     D.push_back(reward);
@@ -93,33 +108,29 @@ int LSPIAgent::step( double reward, double state[] )
     
 
     // now use the action to determine what the next state feature is
-    double startIndex = lastAction * NUM_STATE_FEAT; 
+    int startIndex = lastAction * NUM_STATE_FEAT; 
     // first populate the states
     for (int i = 0; i < NUM_STATE_FEAT; i++){
-         lastBasisFeature[i] = state[startIndex];
+         lastBasisFeature(i) = state[startIndex];
          startIndex++;
     }
     // and then the actions
     int counter = 0;
     for (int i = NUM_STATE_FEAT; i < NUM_FEATURES; i++){
         if (counter == lastAction)
-            lastBasisFeature[i] = 1;
+            lastBasisFeature(i) = 1;
         else
-            lastBasisFeature[i] = 0;
+            lastBasisFeature(i) = 0;
         counter++;
     }        
 
     // This adds s' 
-    VectorXd nextStateAction(NUM_FEATURES);
     for (int i = 0; i < NUM_STATE_FEAT; i++){
-        D.push_back(lastBasisFeature[i]);
-    }
-    for (int i = 0; i < NUM_FEATURES; i++){
-        nextStateAction(i) = lastBasisFeature[i];
+        D.push_back(lastBasisFeature(i));
     }
 
     // Update A
-    updateA(stateAction, nextStateAction); 
+    updateA(stateAction, lastBasisFeature); 
 
     // Update b
     updateb(stateAction, reward);    
@@ -131,34 +142,31 @@ int LSPIAgent::step( double reward, double state[] )
 void LSPIAgent::endEpisode( double reward )
 {
   if ( bLearning && lastAction != -1 ) { /* otherwise we never ran on this episode */
-    char buffer[128];
+/*    char buffer[128];
     sprintf( buffer, "reward: %.2f", reward ); 
     LogDraw.logText( "reward", VecPosition( 25, 30 ),
 		     buffer,
 		     1, COLOR_NAVY );
-    
+*/    
     // TODO: technically we need to update A, but we can't do that without the next state. 
     // Going to assume nextState is same as previous state. 
      // This adds s, a
     
-    VectorXd stateAction(NUM_FEATURES);
-
     for (int i = 0; i < NUM_FEATURES; i++){
-        D.push_back(lastBasisFeature[i]);
-        stateAction(i) = lastBasisFeature[i];
+        D.push_back(lastBasisFeature(i));
     }
     // This adds r
     D.push_back(reward);
     // This adds s'
     for (int i = 0; i < NUM_STATE_FEAT; i++){
-        D.push_back(lastBasisFeature[i]);
+        D.push_back(lastBasisFeature(i));
     }
 
     // Update A
-    updateA(stateAction, stateAction);
+    updateA(lastBasisFeature, lastBasisFeature);
 
     // Update b
-    updateb(stateAction, reward);
+    updateb(lastBasisFeature, reward);
 
   }
   // SANMIT EDIT: Changed 200 to 5 in order to see that saving is working... need to find a better way to do this... 
@@ -183,29 +191,55 @@ int LSPIAgent::selectAction()
   return action;
 }
 
+// Load w
 bool LSPIAgent::loadWeights( char *filename )
 {
-  cout << "Loading weights from " << filename << endl;
-  int file = open( filename, O_RDONLY );
-  read( file, (char *) weights, RL_MEMORY_SIZE * sizeof(double) );
-  colTab->restore( file );
-  close( file );
-  cout << "...done" << endl;
-  return true;
+    double dWeights[NUM_FEATURES];
+    cout << "Loading weights from " << filename << " ...";
+    // Load the weights from the file to the double array
+    ifstream inStream(filename, ios::in | ios::binary);
+    inStream.read((char *) &dWeights, sizeof dWeights);
+    inStream.close();
+
+    // Copy the weights to weight vector
+    for (int i = 0; i < NUM_FEATURES; i++){
+        weights(i) = dWeights[i];
+    }
+    cout << "done" << endl;
+    return true;
 }
 
-// Save D and w. 
+// Save w
 bool LSPIAgent::saveWeights( char *filename )
 {
-  int file = open( filename, O_CREAT | O_WRONLY, 0664 );
-  write( file, (char *) weights, RL_MEMORY_SIZE * sizeof(double) );
-  colTab->save( file );
-  close( file );
-  return true;
+    cout << "Saving weights to " << filename << " ...";
+    // Put weights into a double array
+    double dWeights[NUM_FEATURES];
+    for (int i = 0; i < NUM_FEATURES; i++){
+        dWeights[i] = weights(i); 
+    }
+    // Write the weight array to file
+    ofstream outStream(filename, ios::out | ios::binary | ios::trunc);
+    if (!outStream)
+        return false;
+    outStream.write( (char *) &dWeights, sizeof dWeights);
+    outStream.close();
+    cout << "done" << endl;
+    return true;
 }
 
+// TODO:
+bool LSPIAgent::loadExperiences(char *filename){
+    return false;
+}
+// TODO:
+bool LSPIAgent::saveExperiences(char *filename){
+    return false;
+}
+
+
 // Use the weights matrix and state features to compute Q
-void LSPIAgent::computeQ( double[] state)
+void LSPIAgent::computeQ( double state[])
 {
     // state should contain the features of the states for all 25 points on the grid
     
@@ -239,7 +273,6 @@ double LSPIAgent::computeQa(VectorXd features){
 }
 
 // Returns index (action) of largest entry in Q array, breaking ties randomly 
-// TODO: KEEP THE PREVIOUS ACTION IF THERE IS A TIE. OTHERWISE, BREAK RANDOMLY
 int LSPIAgent::argmaxQ()
 {
   int bestAction = 0;
@@ -280,7 +313,7 @@ void LSPIAgent::loadAbFromD() {
         }
 
         // Recover r
-        double r = D[i++];
+        double reward = D[i++];
 
         // Recover s'
         VectorXd nextStateAction(NUM_FEATURES);
@@ -328,6 +361,8 @@ void LSPIAgent::updateWeights()
     // Reset A and b using the new policy derived from w, using the samples stored in D
     loadAbFromD();    
 }
+
+// TODO:
 void LSPIAgent::setParams(int iCutoffEpisodes, int iStopLearningEpisodes)
 {
   /* set learning parameters */
