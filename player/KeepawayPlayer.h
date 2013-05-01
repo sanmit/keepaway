@@ -34,6 +34,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "BasicPlayer.h"
 #include "SMDPAgent.h"
+#include "LSPIAgent.h"
 
 /*! This class is a superclass from BasicPlayer and contains a more
     sophisticated decision procedure to determine the next action. */
@@ -45,7 +46,7 @@ class KeepawayPlayer:public BasicPlayer
   Time          m_timeLastSay;           /*!< last time communicated         */
   Time          m_timeStartEpisode;
   SMDPAgent     *SA;        // Holds passer policy and taker policy.
-  SMDPAgent     *SA2;       // Holds GetOpen policy. For takers, this is NULL.
+  LSPIAgent     *SA2;       // Holds GetOpen policy. For takers, this is NULL.
 
   // methods associated with saying (defined in KeepawayPlayer.cc)
   bool          shallISaySomething        (                                  );
@@ -54,7 +55,7 @@ class KeepawayPlayer:public BasicPlayer
 
  public:
   KeepawayPlayer                          ( SMDPAgent      *sa,
-                                            SMDPAgent      *sa2,
+                                            LSPIAgent      *sa2,
 					                        ActHandler     *a,
                                             WorldModel     *wm,
                                             ServerSettings *ss,

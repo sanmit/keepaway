@@ -11,7 +11,7 @@
         - Need some way of loading, saving, and updating list of samples
         - Accessing a column:  .col(index)
 
-
+        - Need to typecast actions in D to integers? Maybe not needed... 
 */
 
 #define NUM_FEATURES 35     // 10 state variables + 25 binary action variables
@@ -33,11 +33,12 @@ class LSPIAgent:public SMDPAgent
   int lastAction;
   VectorXd lastBasisFeature;//(NUM_FEATURES);    // Stores the last state-action pair
 
-  double alpha;
-  double gamma;     // Used. Default to one. 
-  double lambda;
-  double epsilon;
-  
+//  double alpha;
+  double gamma;     // discount factor (default 1)
+//  double lambda;
+  double epsilon;   // exploration rate (default 0)
+  double theta;     // convergence threshold
+
     double Q[NUM_ACTIONS];   // This will store the values for each of the actions for the current state
     vector<double> D;   // This will store the samples of the form (state, action, reward, nextState). Thus each multiple of length  |S|+|A|+1+|S| is a sample. 
 
@@ -56,7 +57,10 @@ class LSPIAgent:public SMDPAgent
   void loadAbFromD();
   void updateA(VectorXd stateAction, VectorXd nextStateAction);
   void updateb(VectorXd stateAction, double reward);
- public:
+
+  double weightDifference(VectorXd w1, VectorXd w2);
+    
+public:
   LSPIAgent                  ( int    numFeatures,
 				      int    numActions,
 				      bool   bLearn,
@@ -74,10 +78,15 @@ class LSPIAgent:public SMDPAgent
 
   // Functions
   bool loadWeights( char *filename );
-  bool saveWeights( char *filename );
+  bool saveWeights(char *filename);
 
   bool saveExperiences(char *filename);
   bool loadExperiences(char *filename);
+
+  int getEpochNum() {return epochNum; }
+
+  bool isLearning() {return bLearning; }
+  bool learn();
 
 } ;
 

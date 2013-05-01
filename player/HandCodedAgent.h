@@ -42,7 +42,7 @@ class HandCodedAgent:public SMDPAgent
   int alwaysHold();
   int random();
   int handCoded( double state[] );
-  
+  int epochNum;  
   char policy[256];
 
  public:
@@ -56,9 +56,13 @@ class HandCodedAgent:public SMDPAgent
   void endEpisode( double reward );
   void setParams(int iCutoffEpisodes, int iStopLearningEpisodes){exit(1);} //*met 8/16/05
 
+  int getEpochNum() {return epochNum; }
+
   // Dummy methods
   bool saveWeights(char *filename) {return false; }
   int getLastAction() {return 0; }   // dummy method. do not use!
+
+
 } ;
 
 #endif

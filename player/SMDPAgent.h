@@ -60,6 +60,7 @@ class SMDPAgent
   virtual bool saveWeights(char *filename) = 0;
 
   virtual int getLastAction() = 0;  
+  virtual int getEpochNum() = 0;
 
 } ;
 

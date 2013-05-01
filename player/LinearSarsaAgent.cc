@@ -139,9 +139,9 @@ void LinearSarsaAgent::endEpisode( double reward )
     updateWeights( delta );
   }
   // SANMIT EDIT: Changed 200 to 5 in order to see that saving is working... need to find a better way to do this... 
-  if ( bLearning && bSaveWeights && rand() % 200 == 0 ) {
-    saveWeights( weightsFile );
-  }
+//  if ( bLearning && bSaveWeights && rand() % 200 == 0 ) {
+//    saveWeights(weightsFile);
+//  }
   lastAction = -1;
 }
 
@@ -171,7 +171,7 @@ bool LinearSarsaAgent::loadWeights( char *filename )
   return true;
 }
 
-bool LinearSarsaAgent::saveWeights( char *filename )
+bool LinearSarsaAgent::saveWeights(char *filename)
 {
   int file = open( filename, O_CREAT | O_WRONLY, 0664 );
   write( file, (char *) weights, RL_MEMORY_SIZE * sizeof(double) );

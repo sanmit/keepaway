@@ -39,11 +39,13 @@ HandCodedAgent::HandCodedAgent( int numFeatures, int numActions,
 {
   strcpy( policy, strPolicy );
   WM = wm;
+  epochNum = 0;
 }
 
 
 int HandCodedAgent::startEpisode( double state[] )
 {
+    epochNum++;
   return step( 0, state );
 }
 

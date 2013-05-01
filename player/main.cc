@@ -58,7 +58,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "KeepawayPlayer.h"
 #include "HandCodedAgent.h"
 #include "LinearSarsaAgent.h"
-
+#include "LSPIAgent.h"
 #include "Parse.h"
 #include <string.h>   // needed for strcpy
 #ifdef WIN32
@@ -284,29 +284,46 @@ int main( int argc, char * argv[] )
 
   SMDPAgent *sa = NULL;     // This will store the policy for Pass (and also the takers)
 
-  SMDPAgent *sa2 = NULL;    // This will store the policy for GetOpen
+  LSPIAgent *sa2 = NULL;    // This will store the policy for GetOpen
+
+
+    // HARDCODED FILE PATHS
 
   double ranges[ MAX_STATE_VARS ];
   double minValues[ MAX_STATE_VARS ];
   double resolutions[ MAX_STATE_VARS ];
   int numFeatures = wm.keeperStateRangesAndResolutions( ranges, minValues, resolutions, 
 							iNumKeepers, iNumTakers );
-  int numActions = iNumKeepers; // So currently, the only actions for keepers is to pass to another keeper... there should also be a hold ball somewhere.
+  int numActions = iNumKeepers;
+ //cout << "Loading weights from: " << loadWeightsFile << endl;
+      //cout << "Saving weights to: " << saveWeightsFile << endl;
 
   // Start a learning agent
   cout << "DETERMINING TYPE OF AGENT" << endl; 
+  // (l)earned
   if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
-    // (l)earned
+   
       cout << "***** INITIATING A LEARNING AGENT " << bLearn << " ******" << endl;
-      cout << "Loading weights from: " << loadWeightsFile << endl;
-      cout << "Saving weights to: " << saveWeightsFile << endl;
-      sa = new LinearSarsaAgent(
+     
+      sprintf(saveWeightsFile, "sarsaWeights%d", wm.getPlayerNumber());
+
+      // PASS (LinearSarsa)  
+           sa = new LinearSarsaAgent(
       numFeatures, numActions, bLearn, resolutions,
       loadWeightsFile, saveWeightsFile
     );
-
-      sa2 = new LinearSarsaAgent(numFeatures, 25, bLearn, resolutions, loadWeightsFile, saveWeightsFile);                // TODO:SANMIT
+     
+//      cout << "Sarsa save weights file: (" << saveWeightsFile << ")\n";
+      
+      // GETOPEN (LSPI)
+      sprintf(saveWeightsFile, "lspiWeights%d" ,wm.getPlayerNumber());
+      sa2 = new LSPIAgent(35, 25, bLearn, loadWeightsFile, saveWeightsFile);
+      //sa2 = new LinearSarsaAgent(numFeatures, 25, bLearn, resolutions, loadWeightsFile, saveWeightsFile);                // TODO:SANMIT
       cout << "PASSING AGENT CREATED" << endl;
+
+      
+//      cout << "LSPI save weights file: (" << saveWeightsFile << ")\n";
+      
       // SANMIT: Dunno what this hackery is for... 
     // *** BEGIN HACKERY ***
   } else if (!strncmp(strPolicy, "ext=", 4)) {
@@ -347,6 +364,16 @@ int main( int argc, char * argv[] )
     // (ha)nd (ho)ld (r)andom
     sa = new HandCodedAgent( numFeatures, numActions,
 			     strPolicy, &wm );
+  
+    // Essentially the getopen is random since we aren't loading any weights
+    sprintf(loadWeightsFile, "");
+    sprintf(saveWeightsFile, "lspiWeights%d", wm.getPlayerNumber());
+    bLearn = true;
+
+    sa2 = new LSPIAgent(35, 25, bLearn, loadWeightsFile, saveWeightsFile);
+
+    cout << "LSPI save weights file: (" << saveWeightsFile << ")\n";
+  
   }
 
   if (!sa) {

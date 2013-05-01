@@ -32,11 +32,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "KeepawayPlayer.h"
 #include "Parse.h"
 #include "SayMsgEncoder.h"
+#include "LSPIAgent.h"
 #include <cstring>
 #include "stdlib.h"
 extern LoggerDraw LogDraw;
 
-KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, SMDPAgent* sa2, ActHandler* act, WorldModel *wm, 
+KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, LSPIAgent* sa2, ActHandler* act, WorldModel *wm, 
 				ServerSettings *ss, PlayerSettings *ps,
 				char* strTeamName, int iNumKeepers, int iNumTakers,
 				double dVersion, int iReconnect )
@@ -82,6 +83,7 @@ void KeepawayPlayer::mainLoop( )
     bContLoop =  false;
 
   // *** BEGIN KEEPAWAY LOOP ***
+  bool finished = false;
   while( bContLoop )                                 // as long as server alive
   {
     Log.logWithTime( 3, "  start update_all" );
@@ -173,12 +175,34 @@ void KeepawayPlayer::mainLoop( )
     // bContLoop=WM->wait... since bContLoop can be changed elsewhere
     if(  WM->waitForNewInformation() == false )             // This basically blocks until a new sense or see comes from the server. If the timer times out, then it is over. 
         bContLoop =  false;
+
+    // We train/test in segments of 5K
+    const int N_ITERATIONS = 5000;
+
+    if (!finished && SA->getEpochNum() > N_ITERATIONS && (!SA2 || (SA2 && SA2->getEpochNum() > N_ITERATIONS))){
+        cout << "*** Player " << WM->getPlayerNumber() << " finished seeing " << N_ITERATIONS << " episodes ***" << endl;
+        finished = true;
+    }
+        // Can't do this because not all players finish all their epochs at the same time =/
+        //bContLoop = false;
   }
   // *** END MAIN LOOP ***
 
 
 // SANMIT TODO: SAVE WEIGHTS OF PLAYER HERE.
+ 
+    char sarsaName[256];
+    sprintf(sarsaName, "sarsaWeights%d", WM->getPlayerNumber());
 
+    char lspiName[256];
+    sprintf(lspiName, "lspiWeights%d", WM->getPlayerNumber());
+  
+    SA->saveWeights(sarsaName);
+    if (SA2 && SA2->isLearning()){
+        cout << "LSPI Agent learning weights..." << endl;
+        SA2->learn();
+        SA2->saveWeights(lspiName);
+    }
 
   // shutdow, print hole and number of players seen statistics
   printf("Shutting down player %d\n", WM->getPlayerNumber() );
@@ -290,10 +314,15 @@ void KeepawayPlayer::makeSayMessage( SoccerCommand soc, char * strMsg )
 
 SoccerCommand KeepawayPlayer::keeper()
 {
+
+  //  cout << "Keeper " << WM->getAgentIndex() << " calling keeper()" << endl;
+
   SoccerCommand soc;
 
   if ( WM->isNewEpisode() ) {
     SA->endEpisode( WM->keeperReward() );
+    if (SA2)
+        SA2->endEpisode(WM->keeperTeammateReward());
     WM->setNewEpisode( false );
     WM->setLastAction( UnknownIntValue );
     m_timeStartEpisode = WM->getCurrentTime();
@@ -361,6 +390,8 @@ SoccerCommand KeepawayPlayer::keeper()
 
 SoccerCommand KeepawayPlayer::keeperWithBall()
 {
+    
+  //cout << "Keeper " << WM->getAgentIndex() << " calling keeperwithball()" << endl;
   double state[ MAX_STATE_VARS ];
   int action;
 
@@ -469,6 +500,8 @@ bool KeepawayPlayer::reachedPosition(int action, double epsilon){
 
 SoccerCommand KeepawayPlayer::keeperSupport( ObjectT fastest )
 {
+    
+  //cout << "Keeper " << WM->getAgentIndex() << " calling keeperSupport()" << endl;
     // If we are using the learned getopen policy
 if (SA2){  // SA2    
   
@@ -486,9 +519,10 @@ if (SA2){  // SA2
 
 
   //const int NUM_PASSER_STATE_VARS = (3 * (numK - 1)) + numT + 2;  
-  const int NUM_PASSER_FEATS = 35;
-  double state[NUM_PASSER_FEATS]; 
+  //const int NUM_PASSER_FEATS = 35;
+  //double state[NUM_PASSER_FEATS]; 
     
+    double state[NUM_ACTIONS * NUM_STATE_FEAT];
 
   if ( WM->passerStateVars( state ) > 0 ) {
 
@@ -513,6 +547,8 @@ if (SA2){  // SA2
     // If we were moving to a position, keep going to it. Remember these are SMDP actions.
     else if (!reachedPosition(SA2->getLastAction())){
         action = SA2->getLastAction();
+        // Might comment this reward out...
+        //WM->setLastTeammateAction(action);
     }
     // Otherwise step and figure out a new action
     else {

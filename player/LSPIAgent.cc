@@ -9,6 +9,7 @@
 #include <Eigen/Dense>
 #include <iostream>
 #include <fstream>
+#include <math.h>
 
 using namespace std;
 using namespace Eigen;
@@ -38,6 +39,7 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
   gamma = 1.0;
 //  lambda = 0;
   epsilon = 0; //0.01;
+  theta = 0.000001;
 
   epochNum = 0;
   lastAction = -1;
@@ -198,6 +200,8 @@ bool LSPIAgent::loadWeights( char *filename )
     cout << "Loading weights from " << filename << " ...";
     // Load the weights from the file to the double array
     ifstream inStream(filename, ios::in | ios::binary);
+    if (!inStream)
+        return false;
     inStream.read((char *) &dWeights, sizeof dWeights);
     inStream.close();
 
@@ -210,7 +214,7 @@ bool LSPIAgent::loadWeights( char *filename )
 }
 
 // Save w
-bool LSPIAgent::saveWeights( char *filename )
+bool LSPIAgent::saveWeights(char *filename)
 {
     cout << "Saving weights to " << filename << " ...";
     // Put weights into a double array
@@ -228,13 +232,41 @@ bool LSPIAgent::saveWeights( char *filename )
     return true;
 }
 
-// TODO:
 bool LSPIAgent::loadExperiences(char *filename){
-    return false;
+    cout << "Loading experiences from " << filename << " ...";
+    ifstream inStream(filename, ios::in | ios::binary);
+    if (!inStream)
+        return false;
+    // Read in the size
+    int size;
+    inStream.read(reinterpret_cast<char*>( &size), sizeof size);
+    // Read in the elements
+    for (int i = 0; i < size; i++){
+        double el;
+        inStream.read(reinterpret_cast<char*> (&el), sizeof el);
+        D.push_back(el);
+    }
+    inStream.close();
+    cout << " done" << endl;
+    return true;
 }
 // TODO:
 bool LSPIAgent::saveExperiences(char *filename){
-    return false;
+    cout << "Saving experiences to " << filename << " ...";
+    ofstream outStream(filename, ios::out | ios::binary | ios::trunc);
+    if (!outStream)
+        return false;
+    int size = D.size();
+    // Write the size
+    outStream.write(reinterpret_cast<char*>(&size), sizeof size);
+    // Write the elements
+    for (int i = 0; i < size; i++){
+        double el = D[i];
+        outStream.write(reinterpret_cast<char*>( &el), sizeof el);
+    }
+    outStream.close();
+    cout << "done" << endl;
+    return true;
 }
 
 
@@ -352,15 +384,41 @@ void LSPIAgent::updateb(VectorXd stateAction, double reward){
 }
 
 // This calculates weights for a GIVEN A and b. Then it adjusts A and b according to the new policy. 
-// This should not be called frequently!
+// If attaching loadAbFromD, this should not be called frequently!
 void LSPIAgent::updateWeights()
 {
     // Solve  Aw = b, accounting for the fact that A might be singular (not full rank)
     weights = A.colPivHouseholderQr().solve(b);     
 
     // Reset A and b using the new policy derived from w, using the samples stored in D
-    loadAbFromD();    
+    //loadAbFromD();    
 }
+
+
+bool LSPIAgent::learn() {
+
+    // Keep track of previous weights
+    VectorXd lastWeights(NUM_FEATURES);
+    lastWeights << weights;
+
+    // Update weights. This first call assumes that A and b have been updating from the step and end episode methods
+    updateWeights();
+
+    while (weightDifference(lastWeights, weights) > theta){
+        lastWeights << weights;     // Keep track of current weights
+        loadAbFromD();              // Update A and b with out new weights
+        updateWeights();            // Calculate new weights
+    }
+    return true;
+}
+
+// Euclidean distance between the weight vectors
+double LSPIAgent::weightDifference(VectorXd w1, VectorXd w2){
+    VectorXd w3 = w1 - w2;
+    double dotProd = w3.dot(w3);
+    return sqrt(dotProd);
+}
+
 
 // TODO:
 void LSPIAgent::setParams(int iCutoffEpisodes, int iStopLearningEpisodes)
