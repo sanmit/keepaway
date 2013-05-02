@@ -177,11 +177,11 @@ void KeepawayPlayer::mainLoop( )
         bContLoop =  false;
 
     // We train/test in segments of 5K
-    const int N_ITERATIONS = 5000;
+    const int N_ITERATIONS = 5001;      // Add a few extra in case the first player will break
 
-    if (!finished && SA->getEpochNum() > N_ITERATIONS && (!SA2 || (SA2 && SA2->getEpochNum() > N_ITERATIONS))){
+    if (SA->getEpochNum() > N_ITERATIONS && (!SA2 || (SA2 && SA2->getEpochNum() > N_ITERATIONS))){
         cout << "*** Player " << WM->getPlayerNumber() << " finished seeing " << N_ITERATIONS << " episodes ***" << endl;
-        finished = true;
+        system("killserver");
     }
         // Can't do this because not all players finish all their epochs at the same time =/
         //bContLoop = false;
@@ -190,18 +190,22 @@ void KeepawayPlayer::mainLoop( )
 
 
 // SANMIT TODO: SAVE WEIGHTS OF PLAYER HERE.
- 
+/* 
     char sarsaName[256];
     sprintf(sarsaName, "sarsaWeights%d", WM->getPlayerNumber());
 
     char lspiName[256];
     sprintf(lspiName, "lspiWeights%d", WM->getPlayerNumber());
-  
-    SA->saveWeights(sarsaName);
+*/  
+
+    if (SA && SA->isLearning()){
+        SA->saveWeights();
+    }
+    
     if (SA2 && SA2->isLearning()){
         cout << "LSPI Agent learning weights..." << endl;
         SA2->learn();
-        SA2->saveWeights(lspiName);
+        SA2->saveWeights();
     }
 
   // shutdow, print hole and number of players seen statistics
@@ -545,7 +549,8 @@ if (SA2){  // SA2
         WM->setLastTeammateAction(action);
     }
     // If we were moving to a position, keep going to it. Remember these are SMDP actions.
-    else if (!reachedPosition(SA2->getLastAction())){
+    // Also we only do this while the agent is learning... 
+    else if (SA2->isLearning() && !reachedPosition(SA2->getLastAction())){
         action = SA2->getLastAction();
         // Might comment this reward out...
         //WM->setLastTeammateAction(action);

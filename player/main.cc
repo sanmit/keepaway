@@ -115,6 +115,12 @@ int main( int argc, char * argv[] )
   bool     bSuppliedLogDrawFile              = false;
   int      iStopAfter                        = -1; //*met+1 8/16/05
   int      iStartLearningAfter               = -1;
+  
+  bool      lspiLearn = false;
+  char      lspiInput[256] = "";
+  char      lspiOutput[256] = "";
+  
+  
   ofstream os;
   ofstream osDraw;
 
@@ -142,6 +148,10 @@ int main( int argc, char * argv[] )
           osDraw.open( argv[i+1] );
           bSuppliedLogDrawFile = true;
           break;
+        case 'b':
+            str = &argv[i+1][0];
+            lspiLearn = (Parse::parseFirstInt(&str) == 1) ? true : false;
+          break;
         case 'c':                                   // clientconf file
           if( cs.readValues( argv[i+1], ":" ) == false )
             cerr << "Error in reading client file: " << argv[i+1] << endl;
@@ -157,6 +167,10 @@ int main( int argc, char * argv[] )
         case 'f':
 	  strcpy( saveWeightsFile, argv[i+1] );
 	  break;
+
+        case 'g':
+            strcpy(lspiInput, argv[i+1]);
+            break;
         case 'h':                                   // host server or help
           if( strlen( argv [i]) > 2 && argv[i][2] == 'e' )
           {
@@ -224,6 +238,9 @@ int main( int argc, char * argv[] )
           break;
         case 't':                                   // teamname name
           strcpy( strTeamName, argv[i+1] );
+          break;
+        case 'u':
+          strcpy(lspiOutput, argv[i+1]);
           break;
         case 'v':                                   // version version
           str = &argv[i+1][0];
@@ -297,7 +314,16 @@ int main( int argc, char * argv[] )
   int numActions = iNumKeepers;
  //cout << "Loading weights from: " << loadWeightsFile << endl;
       //cout << "Saving weights to: " << saveWeightsFile << endl;
-
+/*
+    cout << loadWeightsFile << endl;
+    cout << saveWeightsFile << endl;
+    cout << bLearn << endl;
+    cout << lspiInput << endl;
+    cout << lspiOutput << endl;
+    cout << lspiLearn << endl;
+    exit(0);
+*/    
+  
   // Start a learning agent
   cout << "DETERMINING TYPE OF AGENT" << endl; 
   // (l)earned
@@ -305,7 +331,7 @@ int main( int argc, char * argv[] )
    
       cout << "***** INITIATING A LEARNING AGENT " << bLearn << " ******" << endl;
      
-      sprintf(saveWeightsFile, "sarsaWeights%d", wm.getPlayerNumber());
+//      sprintf(saveWeightsFile, "sarsaWeights%d", wm.getPlayerNumber());
 
       // PASS (LinearSarsa)  
            sa = new LinearSarsaAgent(
@@ -316,9 +342,9 @@ int main( int argc, char * argv[] )
 //      cout << "Sarsa save weights file: (" << saveWeightsFile << ")\n";
       
       // GETOPEN (LSPI)
-      sprintf(saveWeightsFile, "lspiWeights%d" ,wm.getPlayerNumber());
-      sa2 = new LSPIAgent(35, 25, bLearn, loadWeightsFile, saveWeightsFile);
-      //sa2 = new LinearSarsaAgent(numFeatures, 25, bLearn, resolutions, loadWeightsFile, saveWeightsFile);                // TODO:SANMIT
+//      bLearn = false;     
+//      sprintf(saveWeightsFile, "lspiWeights%d" ,wm.getPlayerNumber());
+      sa2 = new LSPIAgent(35, 25, lspiLearn, lspiInput, lspiOutput);
       cout << "PASSING AGENT CREATED" << endl;
 
       
@@ -366,13 +392,13 @@ int main( int argc, char * argv[] )
 			     strPolicy, &wm );
   
     // Essentially the getopen is random since we aren't loading any weights
-    sprintf(loadWeightsFile, "");
-    sprintf(saveWeightsFile, "lspiWeights%d", wm.getPlayerNumber());
-    bLearn = true;
+//    sprintf(loadWeightsFile, "");
+//    sprintf(saveWeightsFile, "lspiWeights%d", wm.getPlayerNumber());
+//    bLearn = true;
 
-    sa2 = new LSPIAgent(35, 25, bLearn, loadWeightsFile, saveWeightsFile);
+    sa2 = new LSPIAgent(35, 25, lspiLearn, lspiInput, lspiOutput);
 
-    cout << "LSPI save weights file: (" << saveWeightsFile << ")\n";
+    //cout << "LSPI save weights file: (" << saveWeightsFile << ")\n";
   
   }
 

@@ -74,9 +74,10 @@ class LinearSarsaAgent:public SMDPAgent
   int getLastAction() {return lastAction; }
   
   // Save weights to disk
-  bool saveWeights(char *filename);
+  bool saveWeights();
 
   int getEpochNum() {return epochNum; }
+  bool isLearning() {return bLearning; }
 
 } ;
 

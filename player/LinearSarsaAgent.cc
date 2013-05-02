@@ -171,9 +171,9 @@ bool LinearSarsaAgent::loadWeights( char *filename )
   return true;
 }
 
-bool LinearSarsaAgent::saveWeights(char *filename)
+bool LinearSarsaAgent::saveWeights()
 {
-  int file = open( filename, O_CREAT | O_WRONLY, 0664 );
+  int file = open( weightsFile, O_CREAT | O_WRONLY, 0664 );
   write( file, (char *) weights, RL_MEMORY_SIZE * sizeof(double) );
   colTab->save( file );
   close( file );

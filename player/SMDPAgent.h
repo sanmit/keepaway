@@ -57,10 +57,11 @@ class SMDPAgent
   virtual void endEpisode( double reward ) = 0;
   virtual void setParams(int iCutoffEpisodes, int iStopLearningEpisodes) = 0; //*met 8/16/05
 
-  virtual bool saveWeights(char *filename) = 0;
+  virtual bool saveWeights() = 0;
 
   virtual int getLastAction() = 0;  
   virtual int getEpochNum() = 0;
+  virtual bool isLearning() = 0;
 
 } ;
 

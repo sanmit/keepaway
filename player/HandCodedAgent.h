@@ -59,9 +59,9 @@ class HandCodedAgent:public SMDPAgent
   int getEpochNum() {return epochNum; }
 
   // Dummy methods
-  bool saveWeights(char *filename) {return false; }
+  bool saveWeights() {return false; }
   int getLastAction() {return 0; }   // dummy method. do not use!
-
+  bool isLearning() {return false; }
 
 } ;
 

@@ -78,7 +78,7 @@ public:
 
   // Functions
   bool loadWeights( char *filename );
-  bool saveWeights(char *filename);
+  bool saveWeights();
 
   bool saveExperiences(char *filename);
   bool loadExperiences(char *filename);

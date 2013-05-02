@@ -39,7 +39,7 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
   gamma = 1.0;
 //  lambda = 0;
   epsilon = 0; //0.01;
-  theta = 0.000001;
+  theta = 0.001;
 
   epochNum = 0;
   lastAction = -1;
@@ -49,13 +49,10 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
   D.reserve(MAX_CAPACITY);
   A = MatrixXd::Constant(NUM_FEATURES, NUM_FEATURES, 0);
   b = VectorXd::Constant(NUM_FEATURES, 0);
-
+  weights = VectorXd::Constant(NUM_FEATURES, 0);    // Default to random policy 
+  
   if ( strlen( loadWeightsFile ) > 0 ){
     loadWeights( loadWeightsFile );
-  }
-  else{
-    // Random policy (weights 0)
-    weights = VectorXd::Constant(NUM_FEATURES, 0);  
   }
 }
 
@@ -204,7 +201,6 @@ bool LSPIAgent::loadWeights( char *filename )
         return false;
     inStream.read((char *) &dWeights, sizeof dWeights);
     inStream.close();
-
     // Copy the weights to weight vector
     for (int i = 0; i < NUM_FEATURES; i++){
         weights(i) = dWeights[i];
@@ -214,16 +210,16 @@ bool LSPIAgent::loadWeights( char *filename )
 }
 
 // Save w
-bool LSPIAgent::saveWeights(char *filename)
+bool LSPIAgent::saveWeights()
 {
-    cout << "Saving weights to " << filename << " ...";
+    cout << "Saving weights to " << weightsFile << " ...";
     // Put weights into a double array
     double dWeights[NUM_FEATURES];
     for (int i = 0; i < NUM_FEATURES; i++){
         dWeights[i] = weights(i); 
     }
     // Write the weight array to file
-    ofstream outStream(filename, ios::out | ios::binary | ios::trunc);
+    ofstream outStream(weightsFile, ios::out | ios::binary | ios::trunc);
     if (!outStream)
         return false;
     outStream.write( (char *) &dWeights, sizeof dWeights);
@@ -404,12 +400,16 @@ bool LSPIAgent::learn() {
     // Update weights. This first call assumes that A and b have been updating from the step and end episode methods
     updateWeights();
 
-    while (weightDifference(lastWeights, weights) > theta){
+    const int MAX_ITERATIONS = 50;
+    int iteration = 0;
+    while (iteration < MAX_ITERATIONS && weightDifference(lastWeights, weights) > theta){
+        cout << "Learning iteration " << ++iteration << endl;
         lastWeights << weights;     // Keep track of current weights
         loadAbFromD();              // Update A and b with out new weights
         updateWeights();            // Calculate new weights
     }
-    return true;
+    cout << "Weight difference: " << weightDifference(lastWeights, weights) << endl;
+    return (iteration < MAX_ITERATIONS);    // Converged, or just ran out of iterations
 }
 
 // Euclidean distance between the weight vectors
