@@ -120,6 +120,7 @@ int main( int argc, char * argv[] )
   char      lspiInput[256] = "";
   char      lspiOutput[256] = "";
   
+  bool      handGetOpen = false; 
   
   ofstream os;
   ofstream osDraw;
@@ -257,6 +258,10 @@ int main( int argc, char * argv[] )
 	  str   = &argv[i+1][0];
 	  iStartLearningAfter = Parse::parseFirstInt( &str ); // initially don't learn, but turn on learning after iStartLearningAfter episodes have passed
 	  break;
+        case 'z':
+            str    = &argv[i+1][0];
+            handGetOpen = (Parse::parseFirstInt( &str ) == 1 ) ? true : false ;
+            break;
         default:
           cerr << "(main) Unknown command option: " << argv[i] << endl;
       }
@@ -344,7 +349,8 @@ int main( int argc, char * argv[] )
       // GETOPEN (LSPI)
 //      bLearn = false;     
 //      sprintf(saveWeightsFile, "lspiWeights%d" ,wm.getPlayerNumber());
-      sa2 = new LSPIAgent(35, 25, lspiLearn, lspiInput, lspiOutput);
+      if (!handGetOpen)
+        sa2 = new LSPIAgent(35, 25, lspiLearn, lspiInput, lspiOutput);
       cout << "PASSING AGENT CREATED" << endl;
 
       
@@ -395,8 +401,8 @@ int main( int argc, char * argv[] )
 //    sprintf(loadWeightsFile, "");
 //    sprintf(saveWeightsFile, "lspiWeights%d", wm.getPlayerNumber());
 //    bLearn = true;
-
-    sa2 = new LSPIAgent(35, 25, lspiLearn, lspiInput, lspiOutput);
+    if (!handGetOpen)
+        sa2 = new LSPIAgent(35, 25, lspiLearn, lspiInput, lspiOutput);
 
     //cout << "LSPI save weights file: (" << saveWeightsFile << ")\n";
   
@@ -410,11 +416,12 @@ int main( int argc, char * argv[] )
     //cout << "FIELD WIDTH: " << ss.getKeepawayWidth() << endl;
     //cout << "FIELD LENGTH: " << ss.getKeepawayLength() << endl;
 
-//    ss.setKeepawayWidth(50);
 
-  // Create the keepaway player. How do you know whether it is a taker or keeper? The team name determines the player type. 
+  
+  // Note that if sa2 is NULL, then we are following a handcoded GetOpen policy. 
+  
   KeepawayPlayer bp( sa, sa2, &a, &wm, &ss, &cs, strTeamName, 
-		     iNumKeepers, iNumTakers, dVersion, iReconnect );
+		     iNumKeepers, iNumTakers, dVersion, iReconnect, iStopAfter );
 
   // Handle sensations using a thread. This will update the world model with the information it gets ... simultaneously
 #ifdef WIN32

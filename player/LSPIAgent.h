@@ -27,7 +27,7 @@ class LSPIAgent:public SMDPAgent
   char weightsFile[256];   // File to store the weights in 
   bool bLearning;
   bool bSaveWeights;
-  
+  bool randomPolicy;
   int epochNum;
 
   int lastAction;
@@ -87,6 +87,7 @@ public:
 
   bool isLearning() {return bLearning; }
   bool learn();
+  bool isRandomPolicy() { return randomPolicy; }
 
 } ;
 

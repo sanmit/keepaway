@@ -39,7 +39,7 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
   gamma = 1.0;
 //  lambda = 0;
   epsilon = 0; //0.01;
-  theta = 0.001;
+  theta = 1;
 
   epochNum = 0;
   lastAction = -1;
@@ -50,9 +50,10 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
   A = MatrixXd::Constant(NUM_FEATURES, NUM_FEATURES, 0);
   b = VectorXd::Constant(NUM_FEATURES, 0);
   weights = VectorXd::Constant(NUM_FEATURES, 0);    // Default to random policy 
-  
+  randomPolicy = true;  
   if ( strlen( loadWeightsFile ) > 0 ){
     loadWeights( loadWeightsFile );
+    randomPolicy = false;                           // This is approximate, though I'm guessing once you save any weights, they won't be completely random... 
   }
 }
 
@@ -400,7 +401,9 @@ bool LSPIAgent::learn() {
     // Update weights. This first call assumes that A and b have been updating from the step and end episode methods
     updateWeights();
 
-    const int MAX_ITERATIONS = 50;
+    cout << "Initial weight difference: " << weightDifference(lastWeights, weights) << endl;
+
+    const int MAX_ITERATIONS = 100;
     int iteration = 0;
     while (iteration < MAX_ITERATIONS && weightDifference(lastWeights, weights) > theta){
         cout << "Learning iteration " << ++iteration << endl;
@@ -408,7 +411,7 @@ bool LSPIAgent::learn() {
         loadAbFromD();              // Update A and b with out new weights
         updateWeights();            // Calculate new weights
     }
-    cout << "Weight difference: " << weightDifference(lastWeights, weights) << endl;
+    cout << "Final Weight difference: " << weightDifference(lastWeights, weights) << endl;
     return (iteration < MAX_ITERATIONS);    // Converged, or just ran out of iterations
 }
 

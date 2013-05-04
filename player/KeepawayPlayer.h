@@ -47,7 +47,7 @@ class KeepawayPlayer:public BasicPlayer
   Time          m_timeStartEpisode;
   SMDPAgent     *SA;        // Holds passer policy and taker policy.
   LSPIAgent     *SA2;       // Holds GetOpen policy. For takers, this is NULL.
-
+  int           stopAfter;
   // methods associated with saying (defined in KeepawayPlayer.cc)
   bool          shallISaySomething        (                                  );
   void          makeSayMessage            ( SoccerCommand  soc,
@@ -64,12 +64,13 @@ class KeepawayPlayer:public BasicPlayer
 					                        int            iNumKeepers,
 					                        int            iNumTakers,
                                             double         dVersion,
-                                            int            iReconnect = -1   );
+                                            int            iReconnect = -1,
+                                            int            iStopAfter = -1);
 
   void          mainLoop                  (                                  );
 
     // facility methods
-  bool reachedPosition(int action, double epsilon = 1);
+  bool reachedPosition(int action, double epsilon = 0.5);
 
   // behaviors
   SoccerCommand keeper();

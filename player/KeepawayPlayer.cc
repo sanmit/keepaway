@@ -40,7 +40,7 @@ extern LoggerDraw LogDraw;
 KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, LSPIAgent* sa2, ActHandler* act, WorldModel *wm, 
 				ServerSettings *ss, PlayerSettings *ps,
 				char* strTeamName, int iNumKeepers, int iNumTakers,
-				double dVersion, int iReconnect )
+				double dVersion, int iReconnect, int iStopAfter )
 
 {
   char str[MAX_MSG];
@@ -59,7 +59,7 @@ KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, LSPIAgent* sa2, ActHandler* act, 
   WM->setLastAction( UnknownIntValue );
   m_timeLastSay = -5;
   m_timeStartEpisode = -5;
-
+  stopAfter = iStopAfter;
   // create initialisation string
   if( iReconnect != -1 )
     sprintf( str, "(reconnect %s %d)", strTeamName, iReconnect );
@@ -177,10 +177,8 @@ void KeepawayPlayer::mainLoop( )
         bContLoop =  false;
 
     // We train/test in segments of 5K
-    const int N_ITERATIONS = 5001;      // Add a few extra in case the first player will break
-
-    if (SA->getEpochNum() > N_ITERATIONS && (!SA2 || (SA2 && SA2->getEpochNum() > N_ITERATIONS))){
-        cout << "*** Player " << WM->getPlayerNumber() << " finished seeing " << N_ITERATIONS << " episodes ***" << endl;
+    if (stopAfter != -1 && SA->getEpochNum() > stopAfter && (!SA2 || (SA2 && SA2->getEpochNum() > stopAfter))){
+        cout << "*** Player " << WM->getPlayerNumber() << " finished seeing " << stopAfter << " episodes ***" << endl;
         system("killserver");
     }
         // Can't do this because not all players finish all their epochs at the same time =/
@@ -550,10 +548,10 @@ if (SA2){  // SA2
     }
     // If we were moving to a position, keep going to it. Remember these are SMDP actions.
     // Also we only do this while the agent is learning... 
-    else if (SA2->isLearning() && !reachedPosition(SA2->getLastAction())){
+    else if (!reachedPosition(SA2->getLastAction()) && SA2->isRandomPolicy() ){  // && SA2->isLearning()
         action = SA2->getLastAction();
         // Might comment this reward out...
-        //WM->setLastTeammateAction(action);
+        WM->setLastTeammateAction(action);
     }
     // Otherwise step and figure out a new action
     else {
@@ -569,6 +567,7 @@ if (SA2){  // SA2
 		     "clueless",
 		     1, COLOR_RED );
   }
+
 
   return interpretTeammateAction( action );
 }

@@ -290,7 +290,8 @@ def parse_options(args = None, **defaults):
     parser.add_option('--getopen-learn', action = 'store_true', default = False, help = 'Turn on LSPI learning for getting open')   # Learning or not?
     parser.add_option('--getopen-input', help = 'Load weights file base name for LSPI agent')   # If no load weights is given, it will follow a random policy with w=0
     parser.add_option('--getopen-output', help = 'Save weights file base name for LSPI agent')  # Save weights here (a number will be appended based on keeper number)
-    
+   
+    parser.add_option('--load-same', action = 'store_true', default = False, help = 'Load weights for all players from one file')
     
     options = parser.parse_args(args)[0]
     # Set coach_port and online_coach_port here, if not set previously.
@@ -333,12 +334,14 @@ def run(options):
         
         # Launch each player with their own load/save weights file if one is specified, 
         # since all out methods learn a separate policy for each agent
-        if options.getopen_input is not None:
-            options.getopen_input = options.getopen_input[0:-1] + str(i+1)
+        
+        if not options.load_same:
+            if options.getopen_input is not None:
+                options.getopen_input = options.getopen_input[0:-1] + str(i+1)
+            if options.keeper_input is not None:
+                options.keeper_input = options.keeper_input[0:-1] + str(i+1)
         if options.getopen_output is not None:
             options.getopen_output = options.getopen_output[0:-1] + str(i+1)
-        if options.keeper_input is not None:
-            options.keeper_input = options.keeper_input[0:-1] + str(i+1)
         if options.keeper_output is not None:
             options.keeper_output = options.keeper_output[0:-1] + str(i+1)
 

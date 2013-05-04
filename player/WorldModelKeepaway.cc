@@ -243,8 +243,9 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
         if (SoccerTypes::getIndex(K[i]) != myIndex)
             state[j++] = K1Prime_dist_to_K[i]; 
     }
-    for (int i = 0; i < numT; i++)
+    for (int i = 0; i < numT; i++){
         state[j++] = K1Prime_dist_to_T[i];
+    }
     for (int i = 0; i < numK; i++){
         if (SoccerTypes::getIndex(K[i]) != myIndex)
             state[j++] = nearest_Opp_dist_K[i];
