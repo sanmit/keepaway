@@ -524,7 +524,7 @@ if (SA2){  // SA2
   //const int NUM_PASSER_FEATS = 35;
   //double state[NUM_PASSER_FEATS]; 
     
-    double state[NUM_ACTIONS * NUM_STATE_FEAT];
+    double state[NUM_ACTIONS * NUM_FEATURES];
 
   if ( WM->passerStateVars( state ) > 0 ) {
 

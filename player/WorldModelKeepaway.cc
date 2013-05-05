@@ -32,6 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 #include "WorldModel.h"
+#include "LSPIAgent.h"      // Needed for NUM_FEATURES
 
 int WorldModel::getNumKeepers()
 {
@@ -129,6 +130,10 @@ int WorldModel::getTimeLastAction()
 
 double WorldModel::keeperTeammateReward() {
     double reward = getCurrentCycle() - getTimeLastTeammateAction();
+    
+    // Reward for receiving a pass. We will give on sending a pass because the transition isn't modeled. And anyways they are roughly the same. 
+   // double reward = (getCurrentCycle() - getTimeLastAction() < 5) ? 10 : 0;
+    
     return reward;
 }
 
@@ -155,7 +160,7 @@ int WorldModel::passerStateVars(double state[]){
     for (double w=-7.0; w < 8; w+= 3.5){
          
         VecPosition targetLocation(l, w); 
-        double actionState[10];      
+        double actionState[NUM_FEATURES];      
         
         // Find values for this state. 
         passerStateVars(actionState, targetLocation);
@@ -237,7 +242,6 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     }
 
     // Populate the state vector, ignoring the things above as necessary
-    // TODO: VERIFY.
     int j = 0;
     for (int i = 0; i < numK; i++){
         if (SoccerTypes::getIndex(K[i]) != myIndex)

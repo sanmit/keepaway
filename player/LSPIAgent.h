@@ -11,11 +11,10 @@
         - Need some way of loading, saving, and updating list of samples
         - Accessing a column:  .col(index)
 
-        - Need to typecast actions in D to integers? Maybe not needed... 
 */
 
-#define NUM_FEATURES 35     // 10 state variables + 25 binary action variables
-#define NUM_STATE_FEAT 10
+#define NUM_FEATURES 10     // 10 state variables 
+//#define NUM_STATE_FEAT 10     // vestige definition
 #define NUM_ACTIONS 25
 #define MAX_CAPACITY 16777216 // 16MB   //2097152  // 2MB. Could probably raise this =) 
 
@@ -33,32 +32,29 @@ class LSPIAgent:public SMDPAgent
   int lastAction;
   VectorXd lastBasisFeature;//(NUM_FEATURES);    // Stores the last state-action pair
 
-//  double alpha;
   double gamma;     // discount factor (default 1)
-//  double lambda;
   double epsilon;   // exploration rate (default 0)
   double theta;     // convergence threshold
 
-    double Q[NUM_ACTIONS];   // This will store the values for each of the actions for the current state
-    vector<double> D;   // This will store the samples of the form (state, action, reward, nextState). Thus each multiple of length  |S|+|A|+1+|S| is a sample. 
+  VectorXd Q;   // This will store the values for each of the actions for the current state
+    vector<double> D;   // This will store the samples of the form (state, action, reward, nextState). Thus each multiple of length  |S|+1+1+|S*A| is a sample. 
 
-  // This is an |S|*|A| vector, where |S| is the number of state features
-    VectorXd weights;   // Might want to consider fixing the size of these
-    MatrixXd A;
-    VectorXd b;
+    // This is an |S| x |A| matrix, where each column corresponds to the features for an action 
+    MatrixXd weights;   // Might want to consider fixing the size of these
+    MatrixXd A[NUM_ACTIONS];    // One A and b for each action weight
+    VectorXd b[NUM_ACTIONS];
     
   int  selectAction();              // Select argmaxQ with probability 1-epsilon, random otherwise
   void computeQ( double state[]); // fullState is the stateFeatures. actions will be added inside the function?
   
-  double computeQa(VectorXd features);  // Returns the value of taking a certain action in a certain state, which is parameterized by the features vector 
   
   int  argmaxQ();                   // Choose the action with the highest value
   void updateWeights();   // This will resolve for w
   void loadAbFromD();
-  void updateA(VectorXd stateAction, VectorXd nextStateAction);
-  void updateb(VectorXd stateAction, double reward);
+  void updateA(VectorXd stateAction, VectorXd nextStateAction, int actionIndex);
+  void updateb(VectorXd stateAction, double reward, int actionIndex);
 
-  double weightDifference(VectorXd w1, VectorXd w2);
+  double weightDifference(MatrixXd w1, MatrixXd w2);
     
 public:
   LSPIAgent                  ( int    numFeatures,
