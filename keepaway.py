@@ -29,7 +29,8 @@ def launch_player(player_type, options):
         q = getattr(options, player_type + '_policy'),
         t = player_type + 's', # Pluralize for team name. TODO Really?
         x = options.stop_after,
-        y = options.start_learning_after)
+        y = options.start_learning_after,
+        z = int(options.getopen_hand))
 
     # Handle optional args.
     def put_optional(key, name):
@@ -292,7 +293,9 @@ def parse_options(args = None, **defaults):
     parser.add_option('--getopen-output', help = 'Save weights file base name for LSPI agent')  # Save weights here (a number will be appended based on keeper number)
    
     parser.add_option('--load-same', action = 'store_true', default = False, help = 'Load weights for all players from one file')
-    
+   
+    parser.add_option('--getopen-hand', action = 'store_true', default = False, help = 'Use the hand get-open policy')
+
     options = parser.parse_args(args)[0]
     # Set coach_port and online_coach_port here, if not set previously.
     # This will allow them to be based on the args-given port.
