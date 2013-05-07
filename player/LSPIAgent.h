@@ -13,7 +13,7 @@
 
 */
 
-#define NUM_FEATURES 10     // 10 state variables 
+#define NUM_FEATURES 13     // 10 state variables 
 //#define NUM_STATE_FEAT 10     // vestige definition
 #define NUM_ACTIONS 25
 #define MAX_CAPACITY 16777216 // 16MB   //2097152  // 2MB. Could probably raise this =) 
@@ -40,9 +40,9 @@ class LSPIAgent:public SMDPAgent
     vector<double> D;   // This will store the samples of the form (state, action, reward, nextState). Thus each multiple of length  |S|+1+1+|S*A| is a sample. 
 
     // This is an |S| x |A| matrix, where each column corresponds to the features for an action 
-    MatrixXd weights;   // Might want to consider fixing the size of these
-    MatrixXd A[NUM_ACTIONS];    // One A and b for each action weight
-    VectorXd b[NUM_ACTIONS];
+    VectorXd weights;   // Might want to consider fixing the size of these
+    MatrixXd A;    // One A and b for each action weight
+    VectorXd b;
     
   int  selectAction();              // Select argmaxQ with probability 1-epsilon, random otherwise
   void computeQ( double state[]); // fullState is the stateFeatures. actions will be added inside the function?
@@ -51,10 +51,10 @@ class LSPIAgent:public SMDPAgent
   int  argmaxQ();                   // Choose the action with the highest value
   void updateWeights();   // This will resolve for w
   void loadAbFromD();
-  void updateA(VectorXd stateAction, VectorXd nextStateAction, int actionIndex);
-  void updateb(VectorXd stateAction, double reward, int actionIndex);
+  void updateA(VectorXd stateAction, VectorXd nextStateAction);
+  void updateb(VectorXd stateAction, double reward);
 
-  double weightDifference(MatrixXd w1, MatrixXd w2);
+  double weightDifference(VectorXd w1, VectorXd w2);
     
 public:
   LSPIAgent                  ( int    numFeatures,
@@ -76,7 +76,7 @@ public:
   bool loadWeights( char *filename );
   bool saveWeights();
 
-  bool saveExperiences(char *filename);
+  bool saveExperiences();
   bool loadExperiences(char *filename);
 
   int getEpochNum() {return epochNum; }

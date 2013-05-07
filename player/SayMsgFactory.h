@@ -67,7 +67,7 @@ class SayMsgFactory {
 
   virtual PassToPlayer *getPassToPlayer(){ return new PassToPlayer(); }
 
-  virtual PassToCoord *getPassToCoord(){ return new PassToCoord(); }
+  virtual PassToCoord *getPassToCoord() = 0; //{ return new PassToCoord(); }
 
   virtual WantPass *getWantPass(){ return new WantPass(); }
 

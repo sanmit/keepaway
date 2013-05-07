@@ -35,6 +35,10 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "LSPIAgent.h"
 #include <cstring>
 #include "stdlib.h"
+#include "SayMsgFactory.h"
+#include "WorldModelSayMsgFactory.h"
+#include "SayMsgDecoder.h"
+
 extern LoggerDraw LogDraw;
 
 KeepawayPlayer::KeepawayPlayer( SMDPAgent* sa, LSPIAgent* sa2, ActHandler* act, WorldModel *wm, 
@@ -77,10 +81,19 @@ void KeepawayPlayer::mainLoop( )
 {
   Timing timer;
 
+    // TEMP TODO
+    //WM->keeperXDestination[0] = 0;
+    //WM->keeperYDestination[0] = 0;
+
   // wait for new information from the server
   // cannot say bContLoop=WM->wait... since bContLoop can be changed elsewhere
   if(  WM->waitForNewInformation() == false )
     bContLoop =  false;
+
+    // Communication setup
+    SayMsgFactory *msgfactory = new WorldModelSayMsgFactory(WM);
+    SayMsgDecoder *decoder = new SayMsgDecoder(msgfactory);
+
 
   // *** BEGIN KEEPAWAY LOOP ***
   bool finished = false;
@@ -96,25 +109,61 @@ void KeepawayPlayer::mainLoop( )
       timer.restartTime();
       SoccerCommand soc;
 
+
+    // Update Communication Information
+    char serverSayMsg[MAX_SAY_MSG];
+    WM->getStrPlayerMsg(serverSayMsg);
+    int playernum = WM->getMsgSender(); 
+    //cout << "Player " << playernum << " said " << serverSayMsg << endl;
+    //cout << "HEARD: " << WM->strLastHearMessage << endl;
+    //cout << "Agent index: " << WM->getAgentIndex() << " Number " << WM->getPlayerNumber() << endl;
+    bool success = decoder->decodeStr(serverSayMsg, playernum);
+    
+    //cout << "Decoding message by " << playernum - 1 << "(" << WM->getAgentIndex() << "): " << serverSayMsg << endl;
+    
+    if (success){
+        SayMsgDecoder::DecodedMsgIterator iter = decoder->getMsgIterator();
+        for( ; iter != decoder->getMsgIteratorEnd(); iter++){
+            SayMsgTypes *curunit = *iter;
+            curunit->process();
+        }
+    }
+    else {
+        cout << "DECODING FAILED." << endl;
+    }
+    //cout << WM->getAgentIndex() << " moved to (" << targetL << "," << targetW << ")" << endl; 
+
+    //cout << WM->getAgentIndex() << ": Player 0 headed to (" << WM->keeperXDestination[0] << "," << WM->keeperYDestination[0] << ")" << endl;
+    //cout << WM->getAgentIndex() << ": Player 1 headed to (" << WM->keeperXDestination[1] << "," << WM->keeperYDestination[1] << ")" << endl;
+    //cout << WM->getAgentIndex() << ": Player 2 headed to (" << WM->keeperXDestination[2] << "," << WM->keeperYDestination[2] << ")" << endl;
+
+
       // DETERMINE ACTION/COMMAND TO TAKE
       if ( WM->getSide() == SIDE_LEFT )
 	soc = keeper();
       else
 	soc = taker();
 
+
+    // WHAT I WANT: Determine whether to communicate based on modulus of the cycle number, that way each keeper takes turns
+
+    // Communicate intended destination
+    // This is done in interpretKeeperTeammateAction since there is easier access to the required parameters (and keeperSupport for handcoded agents)
+
       // COMMUNICATE THE COMMAND TAKEN. Sanmit: I might change this to mimic the communication done in HFO... or is this already like that?
-      if( shallISaySomething() == true )           // shall I communicate
+/*      if( shallISaySomething() == true )           // shall I communicate
         {
           m_timeLastSay = WM->getCurrentTime();
           char strMsg[MAX_SAY_MSG];
 	      makeSayMessage( soc, strMsg );
           if( strlen( strMsg ) != 0 )
             Log.log( 600, "send communication string: %s", strMsg );
-          WM->setCommunicationString( strMsg );
+          // This is what sends the communication?
+         //WM->setCommunicationString( strMsg );
         }
       Log.logWithTime( 3, "  determined action; waiting for new info" );
       // directly after see message, will not get better info, so send commands
-      
+*/      
       // Dunno what's going on here...
       if( WM->getTimeLastSeeMessage() == WM->getCurrentTime() ||
           (SS->getSynchMode() == true && WM->getRecvThink() == true ))
@@ -125,7 +174,7 @@ void KeepawayPlayer::mainLoop( )
         if( SS->getSynchMode() == true  )
         {
           WM->processRecvThink( false );
-          ACT->sendMessageDirect( "(done)" );
+          ACT->sendMessageDirect( "(done)" );       // Also looks like this sends something...
         }
       }
     }  
@@ -307,8 +356,9 @@ void KeepawayPlayer::makeSayMessage( SoccerCommand soc, char * strMsg )
        WM->getConfidence( WM->getAgentObjectType() ) > PS->getPlayerHighConfThr() ) {
     myencoder.add( new OurPos( posAgentPred.getX(), posAgentPred.getY() ) );
   }
-
+  //cout << strMsg << endl;  
   strcpy( strMsg, myencoder.getEncodedStr().c_str() );
+  //cout << strMsg << endl << endl;  
   myencoder.clear();
 }
 
@@ -318,6 +368,9 @@ SoccerCommand KeepawayPlayer::keeper()
 {
 
   //  cout << "Keeper " << WM->getAgentIndex() << " calling keeper()" << endl;
+
+
+    //cout << WM->strLastHearMessage << endl; 
 
   SoccerCommand soc;
 
@@ -431,11 +484,15 @@ SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
     
     int counter = 0;
 
+    float targetL = 0;
+    float targetW = 0;
     for (double l=-7.0; l< 8; l+=3.5){
         for (double w=-7.0; w < 8; w+= 3.5){
             if (counter == action){
                 VecPosition destination(l, w);
                 soc = moveToPos(destination, PS->getPlayerWhenToTurnAngle(), dDistDashBack);
+                targetL = l;
+                targetW = w;
             }
             counter++;
         }
@@ -445,7 +502,28 @@ SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
     ACT->putCommandInQueue(soc);
     //ACT->putCommandInQueue( turnNeckToPoint( WM->getKeepawayRect().getPosCenter(), soc ) ); // Look center
     ACT->putCommandInQueue( turnNeckToObject( OBJECT_BALL, soc ) );     // Look for ball
-    
+
+    // If it's your cycle turn, communicate your action
+    // Consider making it every cycle?
+    //if (((WM->getCurrentCycle()) % (WM->getNumKeepers())) == WM->getAgentIndex()){ 
+        
+        // HARDCODED. Note: Since only 2 players will be trying to get open at any time (and hence executing this call), it is ok to say something every cycle (the players are allowed to say and hear a message).
+        char strMsg[MAX_SAY_MSG];
+        SayMsgEncoder myencoder;
+        myencoder.add(new PassToCoord(targetL, targetW));
+        strcpy(strMsg, myencoder.getEncodedStr().c_str());
+        myencoder.clear();
+        WM->setCommunicationString(strMsg);
+    //}
+
+    // Read the message back
+/*    char serverSayMsg[256];
+    strcpy(serverSayMsg, WM->strLastHearMessage);
+    SayMsgFactory *msgfactory = new MySayMsgFactory();
+    SayMsgDecoder *decoder = new SayMsgDecoder(msgfactory);
+    bool success = decoder->decodeStr(serverSayMsg, playernum);
+*/
+   
     return soc;
 
 }
@@ -567,9 +645,14 @@ if (SA2){  // SA2
 		     "clueless",
 		     1, COLOR_RED );
   }
-
-
-  return interpretTeammateAction( action );
+/*    if (WM->getAgentIndex() == 0)
+        action = 22;
+    else if (WM->getAgentIndex() == 1)
+        action = 6;
+    else
+        action = 14;
+*/
+    return interpretTeammateAction( action );
 }
 
 // Otherwise handcoded getopen
@@ -590,6 +673,16 @@ if (SA2){  // SA2
   ACT->putCommandInQueue( soc );
   //ACT->putCommandInQueue( turnNeckToObject( lookObject, soc ) );
   ACT->putCommandInQueue( turnNeckToPoint( WM->getKeepawayRect().getPosCenter(), soc ) );
+
+  // Communicate hand-coded position?
+    char strMsg[MAX_SAY_MSG];
+    SayMsgEncoder myencoder;
+    VecPosition target = leastCongestedPointForPassInRectangle(WM->getKeepawayRect(), posPassFrom);
+    myencoder.add(new PassToCoord(target.getX(), target.getY()));
+    strcpy(strMsg, myencoder.getEncodedStr().c_str());
+    myencoder.clear();
+    WM->setCommunicationString(strMsg);
+
 
   return soc;
 }

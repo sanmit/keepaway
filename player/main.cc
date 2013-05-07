@@ -330,11 +330,11 @@ int main( int argc, char * argv[] )
 */    
   
   // Start a learning agent
-  cout << "DETERMINING TYPE OF AGENT" << endl; 
+  //cout << "DETERMINING TYPE OF AGENT" << endl; 
   // (l)earned
   if ( strlen( strPolicy ) > 0 && strPolicy[0] == 'l' ) {
    
-      cout << "***** INITIATING A LEARNING AGENT " << bLearn << " ******" << endl;
+      //cout << "***** INITIATING A LEARNING AGENT " << bLearn << " ******" << endl;
      
 //      sprintf(saveWeightsFile, "sarsaWeights%d", wm.getPlayerNumber());
 
@@ -343,15 +343,19 @@ int main( int argc, char * argv[] )
       numFeatures, numActions, bLearn, resolutions,
       loadWeightsFile, saveWeightsFile
     );
-     
-//      cout << "Sarsa save weights file: (" << saveWeightsFile << ")\n";
+        cout << "INITIATING SARSA AGENT: " << (bLearn ? "Learning" : "Not learning") << endl << "Sarsa save weights file: (" << saveWeightsFile << ")\n" << "Sarsa load weights file: (" << loadWeightsFile << ")\n";
       
-      // GETOPEN (LSPI)
+        // GETOPEN (LSPI)
 //      bLearn = false;     
 //      sprintf(saveWeightsFile, "lspiWeights%d" ,wm.getPlayerNumber());
-      if (!handGetOpen)
-        sa2 = new LSPIAgent(35, 25, lspiLearn, lspiInput, lspiOutput);
-      cout << "PASSING AGENT CREATED" << endl;
+      if (!handGetOpen){
+        sa2 = new LSPIAgent(10, 25, lspiLearn, lspiInput, lspiOutput);
+        cout << "INITIATING GETOPEN AGENT: " << (lspiLearn ? "Learning" : "Not learning") << endl << "LSPI save weights: " << lspiOutput << endl << "LSPI load weights: " << lspiInput << endl;
+      }
+      else {
+        cout << "Handcoded GETOPEN" << endl;
+      }
+      //cout << "PASSING AGENT CREATED" << endl;
 
       
 //      cout << "LSPI save weights file: (" << saveWeightsFile << ")\n";
@@ -396,13 +400,18 @@ int main( int argc, char * argv[] )
     // (ha)nd (ho)ld (r)andom
     sa = new HandCodedAgent( numFeatures, numActions,
 			     strPolicy, &wm );
-  
+    cout << "Handcoded PASS Agent" << endl; // Could be random, but probably not using that one... 
     // Essentially the getopen is random since we aren't loading any weights
 //    sprintf(loadWeightsFile, "");
 //    sprintf(saveWeightsFile, "lspiWeights%d", wm.getPlayerNumber());
 //    bLearn = true;
-    if (!handGetOpen)
-        sa2 = new LSPIAgent(35, 25, lspiLearn, lspiInput, lspiOutput);
+    if (!handGetOpen){
+        sa2 = new LSPIAgent(10, 25, lspiLearn, lspiInput, lspiOutput);
+        cout << "INITIATING GETOPEN AGENT: " << (lspiLearn ? "Learning" : "Not learning") << endl << "LSPI save weights: " << lspiOutput << endl << "LSPI load weights: " << lspiInput << endl;
+    }
+    else {
+        cout << "Handcoded GETOPEN" << endl;
+    }
 
     //cout << "LSPI save weights file: (" << saveWeightsFile << ")\n";
   

@@ -60,7 +60,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "LoggerDraw.h"         // needed for Log
 #include "Formations.h"     // needed for getStrategicPosition (prediction)
 #include <list>
-
+#include "string.h"
 #ifdef WIN32
   #include <windows.h>      // needed for mutex
 #else
@@ -257,6 +257,15 @@ private:
   double        m_moveSpeed; 
 
 public:
+
+  // SANMIT
+  //HARDCODED
+
+  double        keeperXDestination[3];  // Stores the last heard x-coordinate of destination for a keeper 
+  double        keeperYDestination[3];  // Ditto but for y
+
+  void          getStrPlayerMsg(char *msg) { strcpy(msg, m_strPlayerMsg); }
+  int           getMsgSender() {return m_iMessageSender; }
 
   bool          m_bWasCollision;        /*!<Indicates whether it is collision*/
   Time          m_timeLastCollision;    /*!< Last collision time             */
@@ -532,7 +541,7 @@ public:
   bool          storePlayerMessage         ( int            iPlayer,
                                              char           *strMsg,
                                              int            iCycle           );
-  bool          processPlayerMessage       (                                 );
+  bool          processPlayerMessage       (                                 );     // SANMIT
   bool          processRecvThink           ( bool           b                );
 
   // update methods (defined in WorldModelUpdate.C)

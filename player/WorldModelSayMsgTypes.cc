@@ -119,6 +119,11 @@ WMPassToCoord::WMPassToCoord( WorldModel *wm ) : PassToCoord()
 
 void WMPassToCoord::process()
 {
+
+   // Update your World Model to include the information obtained
+   WM->keeperXDestination[SenderPlayerNum - 1] = X;
+   WM->keeperYDestination[SenderPlayerNum - 1] = Y;
+
   //ObjectT passer = SoccerTypes::getOpponentObjectFromIndex( SenderPlayerNum - 1 );
   //VecPosition pos( X, Y );
 }

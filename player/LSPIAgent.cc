@@ -35,29 +35,32 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
     bSaveWeights = false;
   }
 
-  gamma = 1.0;
-  epsilon = 0; //0.01;
-  theta = 1;
 
   epochNum = 0;
   lastAction = -1;
   lastBasisFeature = VectorXd::Constant(NUM_FEATURES, 0);
 
-
   D.reserve(MAX_CAPACITY);
   Q = VectorXd::Constant(NUM_ACTIONS, 0);
 
-  for (int i = 0; i < NUM_ACTIONS; i++){
-    A[i] = MatrixXd::Constant(NUM_FEATURES, NUM_FEATURES, 0);
-    b[i] = VectorXd::Constant(NUM_FEATURES, 0);
-  }
-  
-  weights = MatrixXd::Constant(NUM_FEATURES, NUM_ACTIONS, 0);    // Default to random policy 
+  A = MatrixXd::Constant(NUM_FEATURES, NUM_FEATURES, 0);
+  b = VectorXd::Constant(NUM_FEATURES, 0);
+
+  weights = VectorXd::Constant(NUM_FEATURES, 0);    // Default to random policy 
   randomPolicy = true;  
   if ( strlen( loadWeightsFile ) > 0 ){
     loadWeights( loadWeightsFile );
     randomPolicy = false;                           // This is approximate, though I'm guessing once you save any weights, they won't be completely random... 
   }
+  
+  gamma = 1.0;
+  if (bLearning) // && !randomPolicy)
+    epsilon = 0.25;  // Since LSPI is off policy, we want as many different examples as possible        //0.01;
+  else
+    epsilon = 0;    // No exploration if we aren't learning or we are behaving randomly already
+  theta = 0; //0.000001;
+
+
 }
 
 
@@ -118,10 +121,10 @@ int LSPIAgent::step( double reward, double state[] )
     }
 
     // Update A
-    updateA(stateAction, lastBasisFeature, action); 
+    updateA(stateAction, lastBasisFeature); 
 
     // Update b
-    updateb(stateAction, reward, action);    
+    updateb(stateAction, reward);    
 
 
     return lastAction;
@@ -149,25 +152,35 @@ void LSPIAgent::endEpisode( double reward )
     }
     
     // Update A
-    updateA(lastBasisFeature, lastBasisFeature, lastAction);
+    updateA(lastBasisFeature, lastBasisFeature);
 
     // Update b
-    updateb(lastBasisFeature, reward, lastAction);
+    updateb(lastBasisFeature, reward);
 
   }
   lastAction = -1;      // Episode ended. 
 }
 
+// This is hardcoded for 25 grid points action space
 int LSPIAgent::selectAction()
 {
   int action;
 
+  action = argmaxQ();
+  
   // Epsilon-greedy
   if ( bLearning && drand48() < epsilon ) {     /* explore */
-    action = rand() % NUM_ACTIONS;
-  }
-  else{
-    action = argmaxQ();
+      // Find neighboring actions to argmax instead of just exploring completely randomly (that should be done when weight vector is all 0s) 
+      int local[8] = {-6, -5, -4, -1, 1, 4, 5, 6};
+      vector<int> destinations;
+      for (int i = 0; i < 8; i++){
+          int newDest = action + local[i];
+          if (newDest >= 0 && newDest < NUM_ACTIONS)
+              destinations.push_back(newDest);
+      }
+      int actionIndex = rand() % destinations.size();
+      action = destinations[actionIndex];
+      //action = rand() % NUM_ACTIONS;
   }
 
   return action;
@@ -180,12 +193,10 @@ bool LSPIAgent::loadWeights( char *filename )
     ifstream inStream(filename, ios::in | ios::binary);
     if (!inStream)
         return false;
-    for (int a = 0; a < NUM_ACTIONS; a++){
-        for (int f = 0; f < NUM_FEATURES; f++){
-            double el;
-            inStream.read(reinterpret_cast<char*> (&el), sizeof el);
-            weights(f, a) = el;
-        }
+    for (int f = 0; f < NUM_FEATURES; f++){
+        double el;
+        inStream.read(reinterpret_cast<char*> (&el), sizeof el);
+        weights(f) = el;
     }
     inStream.close();
     // Copy the weights to weight vector
@@ -201,11 +212,9 @@ bool LSPIAgent::saveWeights()
     ofstream outStream(weightsFile, ios::out | ios::binary | ios::trunc);
     if (!outStream)
         return false;
-    for (int a = 0; a < NUM_ACTIONS; a++){
-        for (int f = 0; f < NUM_FEATURES; f++){
-            double el = weights(f, a);
-            outStream.write(reinterpret_cast<char*> (&el), sizeof el);
-        }
+    for (int f = 0; f < NUM_FEATURES; f++){
+        double el = weights(f);
+        outStream.write(reinterpret_cast<char*> (&el), sizeof el);
     }
     outStream.close();
     cout << "done" << endl;
@@ -231,7 +240,9 @@ bool LSPIAgent::loadExperiences(char *filename){
     return true;
 }
 
-bool LSPIAgent::saveExperiences(char *filename){
+bool LSPIAgent::saveExperiences(){
+    char filename[256];
+    sprintf(filename, "%sexperiences", weightsFile);
     cout << "Saving experiences to " << filename << " ...";
     ofstream outStream(filename, ios::out | ios::binary | ios::trunc);
     if (!outStream)
@@ -265,7 +276,7 @@ void LSPIAgent::computeQ( double state[])
         }
         
         // Multiply by weight vector (i.e. call computeQa) and store in Q[a]
-        Q(a) = features.dot(weights.col(a));
+        Q(a) = features.dot(weights);
     }
     
 }
@@ -300,10 +311,8 @@ int LSPIAgent::argmaxQ()
 void LSPIAgent::loadAbFromD() {
 
     // Reset A, b for each action
-    for (int i = 0; i < NUM_ACTIONS; i++){
-        A[i] = MatrixXd::Constant(NUM_FEATURES, NUM_FEATURES, 0);
-        b[i] = VectorXd::Constant(NUM_FEATURES, 0);
-    }
+    A = MatrixXd::Constant(NUM_FEATURES, NUM_FEATURES, 0);
+    b = VectorXd::Constant(NUM_FEATURES, 0);
 
     for (unsigned int i = 0; i < D.size();){
         
@@ -341,22 +350,22 @@ void LSPIAgent::loadAbFromD() {
         }
 
         // Update A
-        updateA(stateAction, nextStateAction, action);
+        updateA(stateAction, nextStateAction);
 
         // Update b
-        updateb(stateAction, reward, action);
+        updateb(stateAction, reward);
 
     }
 
 }
 
 // Might want to make these inline functions
-void LSPIAgent::updateA(VectorXd stateAction, VectorXd nextStateAction, int actionIndex){
-    A[actionIndex] += (stateAction * ( stateAction.transpose() - (gamma * nextStateAction.transpose())));
+void LSPIAgent::updateA(VectorXd stateAction, VectorXd nextStateAction){
+    A += (stateAction * ( stateAction.transpose() - (gamma * nextStateAction.transpose())));
 }
 
-void LSPIAgent::updateb(VectorXd stateAction, double reward, int actionIndex){
-    b[actionIndex] += (stateAction * reward);
+void LSPIAgent::updateb(VectorXd stateAction, double reward){
+    b += (stateAction * reward);
 }
 
 // This calculates weights for a GIVEN A and b. Then it adjusts A and b according to the new policy. 
@@ -364,9 +373,8 @@ void LSPIAgent::updateb(VectorXd stateAction, double reward, int actionIndex){
 void LSPIAgent::updateWeights()
 {
     // Solve  Aw = b, accounting for the fact that A might be singular (not full rank)
-    for (int i = 0; i < NUM_ACTIONS; i++){
-        weights.col(i) = A[i].colPivHouseholderQr().solve(b[i]); 
-    }
+    weights = A.colPivHouseholderQr().solve(b); 
+    
     // Reset A and b using the new policy derived from w, using the samples stored in D
     //loadAbFromD();    
 }
@@ -374,7 +382,7 @@ void LSPIAgent::updateWeights()
 bool LSPIAgent::learn() {
 
     // Keep track of previous weights
-    MatrixXd lastWeights(NUM_FEATURES, NUM_ACTIONS);
+    VectorXd lastWeights(NUM_FEATURES);
     lastWeights << weights;
 
     // Update weights. This first call assumes that A and b have been updating from the step and end episode methods
@@ -397,14 +405,9 @@ bool LSPIAgent::learn() {
 }
 
 // Euclidean distance between the weight vectors
-double LSPIAgent::weightDifference(MatrixXd w1, MatrixXd w2){
-    MatrixXd w3 = w1 - w2;
-    double dotProd = 0;
-    for (int r = 0; r < w3.rows(); r++){
-        for (int c = 0; c < w3.cols(); c++){
-            dotProd += (w3(r, c) * w3(r, c));    
-        }
-    }
+double LSPIAgent::weightDifference(VectorXd w1, VectorXd w2){
+    VectorXd w3 = w1 - w2;
+    double dotProd = w3.dot(w3);
     return sqrt(dotProd);
 }
 

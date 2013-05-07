@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "WorldModel.h"
 #include "LSPIAgent.h"      // Needed for NUM_FEATURES
+#include <iostream>
 
 int WorldModel::getNumKeepers()
 {
@@ -132,8 +133,27 @@ double WorldModel::keeperTeammateReward() {
     double reward = getCurrentCycle() - getTimeLastTeammateAction();
     
     // Reward for receiving a pass. We will give on sending a pass because the transition isn't modeled. And anyways they are roughly the same. 
-   // double reward = (getCurrentCycle() - getTimeLastAction() < 5) ? 10 : 0;
-    
+//    double reward = (getCurrentCycle() - getTimeLastAction() < 5) ? 10 : 0;
+/*
+    // Reward for maximizing angle between opponent
+     // Taker objects for opponents
+    int numK = getNumKeepers();
+    int numT = getNumTakers();
+    // Teammate with ball
+    ObjectT PB = getClosestInSetTo( OBJECT_SET_TEAMMATES, OBJECT_BALL );
+    // Takers
+    ObjectT T[ numT ];
+    for ( int i = 0; i < numT; i++ )
+        T[ i ] = SoccerTypes::getOpponentObjectFromIndex( i );
+    // Sort takers by whoever is closest to the agent
+    double K1Prime_dist_to_T[ numT ];
+    if ( !sortClosestTo( T, numT, getAgentGlobalPosition(), K1Prime_dist_to_T ) )
+        return 0;
+    // Me
+    ObjectT me = getAgentObjectType();
+    VecPosition posPB = getGlobalPosition( PB );
+    double reward = posPB.getAngleBetweenPoints(getAgentGlobalPosition(), getGlobalPosition(T[0])); 
+*/
     return reward;
 }
 
@@ -153,9 +173,7 @@ int WorldModel::getTimeLastTeammateAction() {
 
 // Populates the state vector for all future positions
 int WorldModel::passerStateVars(double state[]){
-  // HARDCODED: Number of states per position is 10. 
   int index = 0;
-  const int numStates = 10; 
   for (double l=-7.0; l< 8; l+=3.5){
     for (double w=-7.0; w < 8; w+= 3.5){
          
@@ -166,7 +184,7 @@ int WorldModel::passerStateVars(double state[]){
         passerStateVars(actionState, targetLocation);
 
         // Populate into whole state vector
-        for (int i = 0; i < numStates; i++){
+        for (int i = 0; i < NUM_FEATURES; i++){
             state[index++] = actionState[i];
         }
     }
@@ -180,7 +198,7 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     int numK = getNumKeepers();
     int numT = getNumTakers();
 
-    int myIndex = getAgentIndex();  // I believe this will find the player index. TODO: VERIFY THIS.
+    int myIndex = getAgentIndex();  // This will find the player index.
 
     // Keeper objects for teammates. Can't tell if this is just a type of if its the actual keeper... 
     ObjectT K[ numK ];
@@ -241,6 +259,29 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
         }
     }
 
+    // FEATURE 11 - Distance from K1' to center
+    VecPosition center = getKeepawayRect().getPosCenter();
+    double K1Prime_dist_to_center = targetLocation.getDistanceTo(center); 
+    
+    // FEATURE 12/13 - Agent communication: distance from K1' to target destinations of each other Keeper
+    // Sort the keepers by distance to the ball this time
+    ObjectT KB[ numK ];
+    for ( int i = 0; i < numK; i++ ){
+        KB[ i ] = SoccerTypes::getTeammateObjectFromIndex( i );
+    }
+    ObjectT PB = getClosestInSetTo( OBJECT_SET_TEAMMATES, OBJECT_BALL );
+    if ( !SoccerTypes::isTeammate( PB ) )
+        return 0;
+    double WB_dist_to_K[ numK ];    // This is a dummy array. We do not use it. Only interested in the sorted ordering. 
+    if ( !sortClosestTo( KB, numK, PB, WB_dist_to_K ) )
+        return 0;
+    double K1_dist_to_K_destination[numK];
+    for (int i = 0; i < numK; i++){
+        int index = SoccerTypes::getIndex(KB[i]); 
+        VecPosition kTarget(keeperXDestination[index], keeperYDestination[index]);  // Where player KB[i] is going
+        K1_dist_to_K_destination[i] = targetLocation.getDistanceTo(kTarget);
+    }
+
     // Populate the state vector, ignoring the things above as necessary
     int j = 0;
     for (int i = 0; i < numK; i++){
@@ -260,6 +301,11 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     }
     state[j++] = K1_dist_to_K1Prime;
     state[j++] = K1_minAngleTo_K1Prime;
+    state[j++] = K1Prime_dist_to_center;
+    for (int i = 0; i < numK; i++){
+        if (SoccerTypes::getIndex(KB[i]) != myIndex)
+            state[j++] = K1_dist_to_K_destination[i];
+    }
 
     return j;
 

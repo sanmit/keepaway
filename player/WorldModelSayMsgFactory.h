@@ -35,7 +35,6 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SayMsgFactory.h"
 #include "WorldModel.h"
 #include "WorldModelSayMsgTypes.h"
-
 extern short char2numMap[];
 
 class WorldModelSayMsgFactory : public SayMsgFactory 

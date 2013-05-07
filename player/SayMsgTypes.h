@@ -324,7 +324,15 @@ class PassToCoord : virtual public SayMsgTypes {
     encoding += DataTypes::MsgTypeID::getEncoding(PASS_TO_COORD_ID);
     encoding += DataTypes::X::getEncoding(X);
     encoding += DataTypes::Y::getEncoding(Y);
+    //cout << "PassTo (" << X << "," << Y << ") encoded as: " << encoding << endl;
+    //char temp[256];
+    //strcpy(temp, encoding.c_str());
 
+    //PassToCoord temp;
+    //temp.parseStringArgs(encoding);
+
+    //cout << "Will be decoded as: (" << temp.X << "," << temp.Y << ")"  << endl;
+    
     return encoding;
   }
 

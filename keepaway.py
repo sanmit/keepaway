@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+from subprocess import Popen
 
 class Any:
     """
@@ -14,7 +14,6 @@ class Any:
 def launch_player(player_type, options):
     """Launcher for both keepers and takers."""
     from itertools import chain
-    from subprocess import Popen
 
     print "**** PLAYER POLICY ****  " + str(getattr(options, player_type + '_policy'))
 
@@ -60,8 +59,8 @@ def launch_player(player_type, options):
     command = [relative('./player/keepaway_player')] + player_options
     #print command
     #print " ".join(command)
-    Popen(command)
-
+    proc = Popen(command)
+    return proc
 
 def launch_monitor(options):
     from subprocess import Popen
@@ -347,8 +346,11 @@ def run(options):
             options.getopen_output = options.getopen_output[0:-1] + str(i+1)
         if options.keeper_output is not None:
             options.keeper_output = options.keeper_output[0:-1] + str(i+1)
+        # TEMPORARY: Make players 2 and 3 use handcoded getopen
+        if i > 0:
+            options.getopen_hand = True 
 
-        launch_player('keeper', options)
+        proc = launch_player('keeper', options)
     # Watch for the team to make sure keepers are team 0.
     wait_for_players(options.port, 'keepers')
 
@@ -363,6 +365,7 @@ def run(options):
         launch_monitor(options)
 
     # All done.
+    proc.communicate();
     return Any(server_pid = server_pid)
 
 

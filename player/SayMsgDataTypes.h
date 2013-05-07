@@ -128,15 +128,19 @@ class DataTypes {
 
   /*
    * Range: [-53, 53)
+   
+   Want (-10, 10)
    */
   class X {
   public:
     static char getEncoding(X_t x){
-      return get_printable_char((x+53)/106 * NUMCHARS);
+      //return get_printable_char((x+53)/106 * NUMCHARS);
+        return get_printable_char((x+10)/20 * NUMCHARS);
     }
 
     static X_t getDecoding(char encoded){
-      return ((float)get_num_from_char(encoded) / NUMCHARS * 106.) - 53.;
+      //return ((float)get_num_from_char(encoded) / NUMCHARS * 106.) - 53.;
+        return ((float)get_num_from_char(encoded) / NUMCHARS * 20. ) - 10.;
     }
 
     /* 
@@ -144,7 +148,17 @@ class DataTypes {
      * Returns: true if X was modified, false o/w. 
      */
     static bool bound(X_t *X){
-      if(*X < -53.){
+        if (*X < -10.){
+            *X = -10.;
+            return true;
+        }
+        else if (*X >= 10.){
+            *X = 9.999;
+            return true;
+        }
+        else return false;
+        
+/*      if(*X < -53.){
 	*X = -53.;
 	return true;
       }
@@ -153,24 +167,36 @@ class DataTypes {
 	return true;
       }
       else return false;
-    }
+*/    }
   };
 
   /*
    * Range: [-34, 34)
+     Want: (-10, 10)
    */
   class Y {
   public:
     static char getEncoding(Y_t y){
-      return get_printable_char( (y+34)/68 * NUMCHARS );
+      //return get_printable_char( (y+34)/68 * NUMCHARS );
+        return get_printable_char( (y+10)/20 * NUMCHARS);
     }
 
     static Y_t getDecoding(char encoded){
-      return ( (float)get_num_from_char(encoded) / NUMCHARS * 68.) - 34.;
+      //return ( (float)get_num_from_char(encoded) / NUMCHARS * 68.) - 34.;
+        return ( (float)get_num_from_char(encoded) / NUMCHARS * 20.) - 10.;
     }
 
     static bool bound(Y_t *Y){
-      if(*Y < -34.){
+        if (*Y < -10.){
+            *Y = -10.;
+            return true;
+        }
+        else if (*Y >= 10.){
+            *Y = 9.999;
+            return true;
+        }
+        else return false;
+/*      if(*Y < -34.){
 	*Y = -34.;
 	return true;
       }
@@ -179,7 +205,7 @@ class DataTypes {
 	return true;
       }
       else return false;
-    }
+*/    }
   };
 
   /*
