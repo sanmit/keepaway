@@ -327,7 +327,7 @@ bool WorldModel::processPlayerMessage( )
   SayMsgDecoder decoder( new WorldModelSayMsgFactory( this ) );
 
   // Use saymsglib to parse message
-  if ( !decoder.decodeStr( strMsg, getPlayerNumber() ) ) {
+  if ( !decoder.decodeStr( strMsg, getPlayerNumber() ) ) { //m_iMessageSender
     cerr << "WorldModelUpdate::processPlayerMessage(): unable to parse \""
 	 << strMsg << "\"\n";
     return false;

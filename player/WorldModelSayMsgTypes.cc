@@ -32,7 +32,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "WorldModelSayMsgTypes.h"
 #include "SoccerTypes.h"
 #include "Geometry.h"
-
+#include <iostream>
 short char2numMap[256]; // We have to put it somewhere
 
 WMOurPos::WMOurPos( WorldModel *wm ) : OurPos()
@@ -119,8 +119,11 @@ WMPassToCoord::WMPassToCoord( WorldModel *wm ) : PassToCoord()
 
 void WMPassToCoord::process()
 {
-
+   //using namespace std;
    // Update your World Model to include the information obtained
+   //cout << "X: " << X << endl;
+   //cout << "Y: " << Y << endl;
+    
    WM->keeperXDestination[SenderPlayerNum - 1] = X;
    WM->keeperYDestination[SenderPlayerNum - 1] = Y;
 

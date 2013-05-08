@@ -55,7 +55,7 @@ LSPIAgent::LSPIAgent( int numFeatures, int numActions, bool bLearn,
   
   gamma = 1.0;
   if (bLearning) // && !randomPolicy)
-    epsilon = 0.25;  // Since LSPI is off policy, we want as many different examples as possible        //0.01;
+    epsilon = 0; //0.25;  // Since LSPI is off policy, we want as many different examples as possible        //0.01;
   else
     epsilon = 0;    // No exploration if we aren't learning or we are behaving randomly already
   theta = 0; //0.000001;
@@ -121,10 +121,10 @@ int LSPIAgent::step( double reward, double state[] )
     }
 
     // Update A
-    updateA(stateAction, lastBasisFeature); 
+    //updateA(stateAction, lastBasisFeature); 
 
     // Update b
-    updateb(stateAction, reward);    
+    //updateb(stateAction, reward);    
 
 
     return lastAction;
@@ -152,10 +152,10 @@ void LSPIAgent::endEpisode( double reward )
     }
     
     // Update A
-    updateA(lastBasisFeature, lastBasisFeature);
+    //updateA(lastBasisFeature, lastBasisFeature);
 
     // Update b
-    updateb(lastBasisFeature, reward);
+    //updateb(lastBasisFeature, reward);
 
   }
   lastAction = -1;      // Episode ended. 
@@ -385,9 +385,18 @@ bool LSPIAgent::learn() {
     VectorXd lastWeights(NUM_FEATURES);
     lastWeights << weights;
 
+    //cout << "Original weights\n" << lastWeights << endl;
+
+    loadAbFromD();
+
+    //cout << "A\n" << A << endl;
+    //cout << "b\n" << b << endl;
+
     // Update weights. This first call assumes that A and b have been updating from the step and end episode methods
     updateWeights();
     
+    //cout << "New weights\n" << weights << endl;
+
     double weightDiff = weightDifference(lastWeights, weights);
     cout << "Initial weight difference: " << weightDiff << endl;
 
@@ -401,6 +410,9 @@ bool LSPIAgent::learn() {
         weightDiff = weightDifference(lastWeights, weights);
     }
     cout << "Final Weight difference: " << weightDifference(lastWeights, weights) << endl;
+    
+    cout << "Learned weights:\n" << weights << endl;
+    
     return (iteration < MAX_ITERATIONS);    // Converged, or just ran out of iterations
 }
 

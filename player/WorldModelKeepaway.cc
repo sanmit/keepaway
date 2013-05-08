@@ -260,8 +260,11 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     }
 
     // FEATURE 11 - Distance from K1' to center
-    VecPosition center = getKeepawayRect().getPosCenter();
-    double K1Prime_dist_to_center = targetLocation.getDistanceTo(center); 
+    //VecPosition C = getKeepawayRect().getPosCenter();
+    //double K1Prime_dist_to_center = targetLocation.getDistanceTo(C); 
+
+//    cout << "Center " << C << " Distance " << K1Prime_dist_to_center << endl; 
+
     
     // FEATURE 12/13 - Agent communication: distance from K1' to target destinations of each other Keeper
     // Sort the keepers by distance to the ball this time
@@ -278,8 +281,11 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     double K1_dist_to_K_destination[numK];
     for (int i = 0; i < numK; i++){
         int index = SoccerTypes::getIndex(KB[i]); 
-        VecPosition kTarget(keeperXDestination[index], keeperYDestination[index]);  // Where player KB[i] is going
-        K1_dist_to_K_destination[i] = targetLocation.getDistanceTo(kTarget);
+        //if (!(keeperXDestination[i] < 0.01 && keeperXDestination[i] > -0.01 || keeperYDestination[i] < 0.01 && keeperYDestination[i] > -0.01)){
+            VecPosition kTarget(keeperXDestination[index], keeperYDestination[index]);  // Where player KB[i] is going
+            K1_dist_to_K_destination[i] = targetLocation.getDistanceTo(kTarget);
+       // }
+            
     }
 
     // Populate the state vector, ignoring the things above as necessary
@@ -301,12 +307,15 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     }
     state[j++] = K1_dist_to_K1Prime;
     state[j++] = K1_minAngleTo_K1Prime;
-    state[j++] = K1Prime_dist_to_center;
+    //state[j++] = K1Prime_dist_to_center;
+
+    
     for (int i = 0; i < numK; i++){
         if (SoccerTypes::getIndex(KB[i]) != myIndex)
             state[j++] = K1_dist_to_K_destination[i];
     }
-
+    if (j != NUM_FEATURES)
+        cout << "J: " << j << endl;
     return j;
 
 }

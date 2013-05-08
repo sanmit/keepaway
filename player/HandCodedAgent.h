@@ -44,6 +44,7 @@ class HandCodedAgent:public SMDPAgent
   int handCoded( double state[] );
   int epochNum;  
   char policy[256];
+  int lastAction; 
 
  public:
   HandCodedAgent                  ( int    numFeatures,
@@ -60,9 +61,9 @@ class HandCodedAgent:public SMDPAgent
 
   // Dummy methods
   bool saveWeights() {return false; }
-  int getLastAction() {return 0; }   // dummy method. do not use!
   bool isLearning() {return false; }
 
+  int getLastAction() { return lastAction; }
 } ;
 
 #endif

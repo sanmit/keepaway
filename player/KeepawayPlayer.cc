@@ -85,6 +85,10 @@ void KeepawayPlayer::mainLoop( )
     //WM->keeperXDestination[0] = 0;
     //WM->keeperYDestination[0] = 0;
 
+    // HACKS!
+    double myKeeperXDestination[3] = {0, 0, 0};
+    double myKeeperYDestination[3] = {0, 0, 0};
+
   // wait for new information from the server
   // cannot say bContLoop=WM->wait... since bContLoop can be changed elsewhere
   if(  WM->waitForNewInformation() == false )
@@ -125,19 +129,45 @@ void KeepawayPlayer::mainLoop( )
         SayMsgDecoder::DecodedMsgIterator iter = decoder->getMsgIterator();
         for( ; iter != decoder->getMsgIteratorEnd(); iter++){
             SayMsgTypes *curunit = *iter;
-            curunit->process();
+            curunit->process();             // This updates the world model with the information from teammate communication
         }
     }
     else {
         cout << "DECODING FAILED." << endl;
     }
-    //cout << WM->getAgentIndex() << " moved to (" << targetL << "," << targetW << ")" << endl; 
 
-    //cout << WM->getAgentIndex() << ": Player 0 headed to (" << WM->keeperXDestination[0] << "," << WM->keeperYDestination[0] << ")" << endl;
+    //WM->processPlayerMessage();
+
+/*
+    // Update myKeeperVars
+    for (int i = 0; i < 3; i++){
+        if (WM->keeperXDestination[i] < 0.01 && WM->keeperXDestination[i] > -0.01 || WM->keeperYDestination[i] < 0.01 && WM->keeperYDestination[i] > -0.01){
+            // Don't update.
+        }
+        else {
+            myKeeperXDestination[i] = WM->keeperXDestination[i];
+            myKeeperYDestination[i] = WM->keeperYDestination[i];
+        }
+    }
+
+    // If the WM somehow set them to 0, change them back!
+    for (int i = 0;  i < 3; i++){
+        if (WM->keeperXDestination[i] < 0.01 && WM->keeperXDestination[i] > -0.01 || WM->keeperYDestination[i] < 0.01 && WM->keeperYDestination[i] > -0.01){
+            WM->keeperXDestination[i] = myKeeperXDestination[i];
+            WM->keeperYDestination[i] = myKeeperYDestination[i];
+        }
+    }
+*/
+
+    //cout << WM->getAgentIndex() << " moved to (" << targetL << "," << targetW << ")" << endl; 
+/*
+    for (int i = 0; i < 3; i++){        
+        if (!(WM->keeperXDestination[i] < 0.01 && WM->keeperXDestination[i] > -0.01 || WM->keeperYDestination[i] < 0.01 && WM->keeperYDestination[i] > -0.01))
+            cout << WM->getAgentIndex() << ": Player " << i << " headed to (" << WM->keeperXDestination[i] << "," << WM->keeperYDestination[i] << ")" << endl;
     //cout << WM->getAgentIndex() << ": Player 1 headed to (" << WM->keeperXDestination[1] << "," << WM->keeperYDestination[1] << ")" << endl;
     //cout << WM->getAgentIndex() << ": Player 2 headed to (" << WM->keeperXDestination[2] << "," << WM->keeperYDestination[2] << ")" << endl;
-
-
+    }
+*/
       // DETERMINE ACTION/COMMAND TO TAKE
       if ( WM->getSide() == SIDE_LEFT )
 	soc = keeper();
@@ -505,16 +535,19 @@ SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
 
     // If it's your cycle turn, communicate your action
     // Consider making it every cycle?
-    //if (((WM->getCurrentCycle()) % (WM->getNumKeepers())) == WM->getAgentIndex()){ 
+    //if (((WM->getCurrentCycle()) % (WM->getNumKeepers())) == WM->getAgentIndex()) 
         
         // HARDCODED. Note: Since only 2 players will be trying to get open at any time (and hence executing this call), it is ok to say something every cycle (the players are allowed to say and hear a message).
+
+    // Communicate only if this action is different than the last action you took, that way there isn't overload.
+    if (SA2->getLastAction() != action){
         char strMsg[MAX_SAY_MSG];
         SayMsgEncoder myencoder;
         myencoder.add(new PassToCoord(targetL, targetW));
         strcpy(strMsg, myencoder.getEncodedStr().c_str());
         myencoder.clear();
         WM->setCommunicationString(strMsg);
-    //}
+    }
 
     // Read the message back
 /*    char serverSayMsg[256];
@@ -640,7 +673,8 @@ if (SA2){  // SA2
   else { // if we don't have enough info to calculate state vars
    // action = WM->getLastTeammateAction();
     //if (action == -1)
-        return moveToPos(WM->getAgentGlobalPosition(), PS->getPlayerWhenToTurnAngle(), 2.0); // stay where you are
+      cout << "Could not extract getopen state" << endl;  
+      return moveToPos(WM->getAgentGlobalPosition(), PS->getPlayerWhenToTurnAngle(), 2.0); // stay where you are
     LogDraw.logText( "state", VecPosition( 35, 25 ),
 		     "clueless",
 		     1, COLOR_RED );
@@ -674,7 +708,8 @@ if (SA2){  // SA2
   //ACT->putCommandInQueue( turnNeckToObject( lookObject, soc ) );
   ACT->putCommandInQueue( turnNeckToPoint( WM->getKeepawayRect().getPosCenter(), soc ) );
 
-  // Communicate hand-coded position?
+  // Communicate hand-coded position
+    
     char strMsg[MAX_SAY_MSG];
     SayMsgEncoder myencoder;
     VecPosition target = leastCongestedPointForPassInRectangle(WM->getKeepawayRect(), posPassFrom);

@@ -349,7 +349,7 @@ int main( int argc, char * argv[] )
 //      bLearn = false;     
 //      sprintf(saveWeightsFile, "lspiWeights%d" ,wm.getPlayerNumber());
       if (!handGetOpen){
-        sa2 = new LSPIAgent(10, 25, lspiLearn, lspiInput, lspiOutput);
+        sa2 = new LSPIAgent(NUM_FEATURES, NUM_ACTIONS, lspiLearn, lspiInput, lspiOutput);
         cout << "INITIATING GETOPEN AGENT: " << (lspiLearn ? "Learning" : "Not learning") << endl << "LSPI save weights: " << lspiOutput << endl << "LSPI load weights: " << lspiInput << endl;
       }
       else {
@@ -406,7 +406,7 @@ int main( int argc, char * argv[] )
 //    sprintf(saveWeightsFile, "lspiWeights%d", wm.getPlayerNumber());
 //    bLearn = true;
     if (!handGetOpen){
-        sa2 = new LSPIAgent(10, 25, lspiLearn, lspiInput, lspiOutput);
+        sa2 = new LSPIAgent(NUM_FEATURES, NUM_ACTIONS, lspiLearn, lspiInput, lspiOutput);
         cout << "INITIATING GETOPEN AGENT: " << (lspiLearn ? "Learning" : "Not learning") << endl << "LSPI save weights: " << lspiOutput << endl << "LSPI load weights: " << lspiInput << endl;
     }
     else {

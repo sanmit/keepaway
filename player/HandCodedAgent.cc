@@ -40,30 +40,36 @@ HandCodedAgent::HandCodedAgent( int numFeatures, int numActions,
   strcpy( policy, strPolicy );
   WM = wm;
   epochNum = 0;
+  lastAction = -1;
 }
 
 
 int HandCodedAgent::startEpisode( double state[] )
 {
+
     epochNum++;
-  return step( 0, state );
+    
+    lastAction = step( 0, state );
+    return lastAction;
 }
 
 int HandCodedAgent::step( double reward, double state[] )
 {
   if ( policy[0] == 'r' ) {      // (r)andom
-    return random();
+    lastAction = random();
   }
   else if ( policy[1] == 'o' ) { // h(o)ld
-    return alwaysHold();
+    lastAction = alwaysHold();
   }
   else {                         // h(a)nd
-    return handCoded( state );
+    lastAction = handCoded( state );
   }
+  return lastAction;
 }
 
 void HandCodedAgent::endEpisode( double reward )
 {
+    lastAction = -1;
   // Do nothing
 }
 
