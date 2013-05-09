@@ -292,8 +292,10 @@ def parse_options(args = None, **defaults):
     parser.add_option('--getopen-output', help = 'Save weights file base name for LSPI agent')  # Save weights here (a number will be appended based on keeper number)
    
     parser.add_option('--load-same', action = 'store_true', default = False, help = 'Load weights for all players from one file')
-   
+    parser.add_option('--single-learner', action = 'store_true', default = False, help = 'Use one learner and 2 handcoded agents')
+
     parser.add_option('--getopen-hand', action = 'store_true', default = False, help = 'Use the hand get-open policy')
+    
 
     options = parser.parse_args(args)[0]
     # Set coach_port and online_coach_port here, if not set previously.
@@ -346,9 +348,10 @@ def run(options):
             options.getopen_output = options.getopen_output[0:-1] + str(i+1)
         if options.keeper_output is not None:
             options.keeper_output = options.keeper_output[0:-1] + str(i+1)
-        # TEMPORARY: Make players 2 and 3 use handcoded getopen
-        if i > 0:
-            options.getopen_hand = True 
+        # Make players 2 and 3 use handcoded getopen
+        if options.single_learner:
+            if i > 0:
+                options.getopen_hand = True 
 
         proc = launch_player('keeper', options)
     # Watch for the team to make sure keepers are team 0.

@@ -260,12 +260,43 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     }
 
     // FEATURE 11 - Distance from K1' to center
-    //VecPosition C = getKeepawayRect().getPosCenter();
-    //double K1Prime_dist_to_center = targetLocation.getDistanceTo(C); 
+    VecPosition C = getKeepawayRect().getPosCenter();
+    double K1Prime_dist_to_center = targetLocation.getDistanceTo(C); 
 
 //    cout << "Center " << C << " Distance " << K1Prime_dist_to_center << endl; 
 
-    
+
+    // Read in other teammates destinations
+    double teammateXDest[3] = {0, 0, 0};
+    double teammateYDest[3] = {0, 0, 0};
+    for (int i = 0; i < getNumKeepers(); i++){
+        // Skip yourself
+        if (i != getAgentIndex()){
+            char actionFile[256];
+            sprintf(actionFile, "agent%dDestination", i);
+            double targetL;
+            double targetW;
+            ifstream inStream(actionFile, ios::in | ios::binary);
+            if (inStream){
+                inStream.read(reinterpret_cast<char*>(&targetL), sizeof targetL);
+                inStream.read(reinterpret_cast<char*>(&targetW), sizeof targetW);
+                inStream.close();
+                teammateXDest[i] = targetL;
+                teammateYDest[i] = targetW;
+            }
+            else
+                cout << "ERROR READING FROM FILE" << endl;
+        }
+    }
+/*
+    // Testing -- see if it read correctly
+    for (int i = 0; i < 3; i++){
+        if (i != getAgentIndex())
+            cout << getAgentIndex() << ": Player " << i << " headed to (" << teammateXDest[i] << "," << teammateYDest[i] << ")" << endl;
+            
+    }
+*/
+
     // FEATURE 12/13 - Agent communication: distance from K1' to target destinations of each other Keeper
     // Sort the keepers by distance to the ball this time
     ObjectT KB[ numK ];
@@ -281,12 +312,22 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     double K1_dist_to_K_destination[numK];
     for (int i = 0; i < numK; i++){
         int index = SoccerTypes::getIndex(KB[i]); 
-        //if (!(keeperXDestination[i] < 0.01 && keeperXDestination[i] > -0.01 || keeperYDestination[i] < 0.01 && keeperYDestination[i] > -0.01)){
-            VecPosition kTarget(keeperXDestination[index], keeperYDestination[index]);  // Where player KB[i] is going
-            K1_dist_to_K_destination[i] = targetLocation.getDistanceTo(kTarget);
-       // }
-            
+        VecPosition kTarget(teammateXDest[index], teammateYDest[index]);  // Where player KB[i] is going
+        K1_dist_to_K_destination[i] = targetLocation.getDistanceTo(kTarget);
     }
+
+    // Feature 14/15 Indicator for heading to the same location
+    double sameTargets[numK];
+    for (int i = 0; i < numK; i++){
+       sameTargets[i] = (K1_dist_to_K_destination[i] < 1 ) ? 1 : 0; 
+    }
+
+    // Feature 16/17 - Indicator for heading to a nearby location 
+    double simTargets[numK];
+    for (int i = 0; i < numK; i++){
+       simTargets[i] = (K1_dist_to_K_destination[i] < 5 ) ? 1 : 0; 
+    }
+
 
     // Populate the state vector, ignoring the things above as necessary
     int j = 0;
@@ -307,13 +348,23 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
     }
     state[j++] = K1_dist_to_K1Prime;
     state[j++] = K1_minAngleTo_K1Prime;
-    //state[j++] = K1Prime_dist_to_center;
+    state[j++] = K1Prime_dist_to_center;
 
     
     for (int i = 0; i < numK; i++){
         if (SoccerTypes::getIndex(KB[i]) != myIndex)
             state[j++] = K1_dist_to_K_destination[i];
     }
+    for (int i = 0; i < numK; i++){
+        if (SoccerTypes::getIndex(KB[i]) != myIndex)
+            state[j++] = sameTargets[i];
+    }
+  
+    for (int i = 0; i < numK; i++){
+        if (SoccerTypes::getIndex(KB[i]) != myIndex)
+            state[j++] = simTargets[i];
+    }
+    
     if (j != NUM_FEATURES)
         cout << "J: " << j << endl;
     return j;

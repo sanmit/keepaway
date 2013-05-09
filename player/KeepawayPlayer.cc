@@ -38,6 +38,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SayMsgFactory.h"
 #include "WorldModelSayMsgFactory.h"
 #include "SayMsgDecoder.h"
+#include <iostream>
 
 extern LoggerDraw LogDraw;
 
@@ -135,6 +136,41 @@ void KeepawayPlayer::mainLoop( )
     else {
         cout << "DECODING FAILED." << endl;
     }
+
+/*  // FOR TESTING
+    // Read in other teammates destinations
+    double teammateXDest[3] = {0, 0, 0};
+    double teammateYDest[3] = {0, 0, 0};
+    for (int i = 0; i < WM->getNumKeepers(); i++){
+        // Skip yourself
+        if (i != WM->getAgentIndex()){
+            char actionFile[256];
+            sprintf(actionFile, "agent%dDestination", i);
+            double targetL;
+            double targetW;
+            ifstream inStream(actionFile, ios::in | ios::binary);
+            if (inStream){
+                inStream.read(reinterpret_cast<char*>(&targetL), sizeof targetL);
+                inStream.read(reinterpret_cast<char*>(&targetW), sizeof targetW);
+                inStream.close();
+                teammateXDest[i] = targetL;
+                teammateYDest[i] = targetW;
+            }
+            else
+                cout << "ERROR READING FROM FILE" << endl;
+        }
+    }
+
+    // See if it read correctly
+    for (int i = 0; i < 3; i++){
+        if (i != WM->getAgentIndex())
+            cout << WM->getAgentIndex() << ": Player " << i << " headed to (" << teammateXDest[i] << "," << teammateYDest[i] << ")" << endl;
+            
+    }
+
+*/
+
+
 
     //WM->processPlayerMessage();
 
@@ -514,8 +550,8 @@ SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
     
     int counter = 0;
 
-    float targetL = 0;
-    float targetW = 0;
+    double targetL = 0;
+    double targetW = 0;
     for (double l=-7.0; l< 8; l+=3.5){
         for (double w=-7.0; w < 8; w+= 3.5){
             if (counter == action){
@@ -540,14 +576,29 @@ SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
         // HARDCODED. Note: Since only 2 players will be trying to get open at any time (and hence executing this call), it is ok to say something every cycle (the players are allowed to say and hear a message).
 
     // Communicate only if this action is different than the last action you took, that way there isn't overload.
-    if (SA2->getLastAction() != action){
+//    if (SA2->getLastAction() != action){
         char strMsg[MAX_SAY_MSG];
         SayMsgEncoder myencoder;
         myencoder.add(new PassToCoord(targetL, targetW));
         strcpy(strMsg, myencoder.getEncodedStr().c_str());
         myencoder.clear();
         WM->setCommunicationString(strMsg);
-    }
+    
+        // File version - save your current destination to file
+        char actionFile[256];
+        sprintf(actionFile, "agent%dDestination", WM->getAgentIndex());
+        ofstream outStream(actionFile, ios::out | ios::binary | ios::trunc);
+        if (outStream){
+            outStream.write(reinterpret_cast<char*>(&targetL), sizeof targetL);
+            outStream.write(reinterpret_cast<char*>(&targetW), sizeof targetW);
+            outStream.close();
+        }
+        else
+            cout << "ERROR SAVING TO FILE" << endl;
+//    }
+
+    
+
 
     // Read the message back
 /*    char serverSayMsg[256];
@@ -717,6 +768,21 @@ if (SA2){  // SA2
     strcpy(strMsg, myencoder.getEncodedStr().c_str());
     myencoder.clear();
     WM->setCommunicationString(strMsg);
+    
+        
+    char actionFile[256];
+    sprintf(actionFile, "agent%dDestination", WM->getAgentIndex());
+    ofstream outStream(actionFile, ios::out | ios::binary | ios::trunc);
+    if (outStream){
+        double targetL = target.getX();
+        double targetW = target.getY();
+        outStream.write(reinterpret_cast<char*>(&targetL), sizeof targetL);
+        outStream.write(reinterpret_cast<char*>(&targetW), sizeof targetW);
+        outStream.close();
+    }
+    else {
+        cout << "ERROR SAVING TO FILE" << endl;
+    }
 
 
   return soc;

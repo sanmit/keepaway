@@ -18,7 +18,7 @@
 #       --synch-mode
 #       --log-game
 #       --restricted-vision
-#      
+#       --single-learner 
 #
 #
 
@@ -27,8 +27,7 @@ SARSA=weights/sarsaWeightsX
 LSPI=weights/lspiWeightsX
 
 # Handcoded pass, learn getopen
-
-#./keepaway.py --monitor --keeper-policy hand --getopen-learn --getopen-output $LSPI --stop-after 10000 --synch-mode 
+./keepaway.py --single-learner --monitor --keeper-policy hand --getopen-learn --getopen-output $LSPI --stop-after 5 --synch-mode 
 
 # Handcoded pass, continue getopen
 #./keepaway.py --monitor --keeper-policy hand --getopen-learn --getopen-input $LSPI --getopen-output $LSPI --stop-after 2500 --synch-mode 
@@ -70,7 +69,7 @@ LSPI=weights/lspiWeightsX
 
 
 # Watch only LSPI policy
-./keepaway.py --monitor --keeper-policy hand --getopen-input $LSPI --stop-after 20
+#./keepaway.py --monitor --keeper-policy hand --getopen-input $LSPI --stop-after 20
 #./keepaway.py --monitor --keeper-policy hand --getopen-input weights/lspiWeights1 --stop-after 20 --load-same
 #./keepaway.py --monitor --keeper-policy learned --keeper-input weights/SARSA/sarsaRand5k/sarsaWeights1 --getopen-input weights/lspiWeights1 --stop-after 20 --load-same
 

@@ -10,7 +10,7 @@
 #include <iostream>
 #include <fstream>
 #include <math.h>
-
+#include <ctime>
 using namespace std;
 using namespace Eigen;
 
@@ -87,13 +87,18 @@ int LSPIAgent::startEpisode( double state[] )
 // Our main goal here is to update D, return the new action, and (maybe) update A
 int LSPIAgent::step( double reward, double state[] )
 {
-
+/*
+    bool isFirstStep = true;
+    if (D.size() > 0)
+        isFirstStep = false;
+*/
     // Add (s, a, r, s') to D, where s' is the basis feature of the current state
     // This adds s
     VectorXd stateAction(NUM_FEATURES);
     for (int i = 0; i < NUM_FEATURES; i++){
         D.push_back(lastBasisFeature(i));
         stateAction(i) = lastBasisFeature(i);
+        //cout << "Pushed: " << D[D.size()-1] << end;
     }
 
     // This adds a
@@ -119,6 +124,14 @@ int LSPIAgent::step( double reward, double state[] )
     for (int i = 0; i < NUM_FEATURES * NUM_ACTIONS; i++){
          D.push_back(state[i]);
     }
+/*
+    if (isFirstStep){
+        cout << "First D" << endl;
+        for (unsigned int i = 0; i < D.size(); i++){
+            cout << D[i] << endl;
+        }
+    }
+*/
 
     // Update A
     //updateA(stateAction, lastBasisFeature); 
@@ -126,6 +139,7 @@ int LSPIAgent::step( double reward, double state[] )
     // Update b
     //updateb(stateAction, reward);    
 
+    //cout << "State action: " << stateAction.transpose() << endl << endl; 
 
     return lastAction;
 }
@@ -313,6 +327,8 @@ void LSPIAgent::loadAbFromD() {
     // Reset A, b for each action
     A = MatrixXd::Constant(NUM_FEATURES, NUM_FEATURES, 0);
     b = VectorXd::Constant(NUM_FEATURES, 0);
+    
+    bool firstExample = true;       // IMPORTANT: throw away the first example. It is unreliable!
 
     for (unsigned int i = 0; i < D.size();){
         
@@ -349,11 +365,25 @@ void LSPIAgent::loadAbFromD() {
              startIndex++;
         }
 
+        //cout << "State action: " << stateAction.transpose() << endl;
+        //cout << "Next state action: " << nextStateAction.transpose() << endl;
+       
+//        int temp = time(NULL) + 2;
+//        while(temp > time(NULL));
+       
+        if (firstExample){
+            firstExample = false;
+            continue;
+        }
+
         // Update A
         updateA(stateAction, nextStateAction);
 
         // Update b
         updateb(stateAction, reward);
+        
+        //cout << "A:\n" << A << endl;
+        //cout << "b:\n" << b << endl;
 
     }
 
@@ -374,7 +404,8 @@ void LSPIAgent::updateWeights()
 {
     // Solve  Aw = b, accounting for the fact that A might be singular (not full rank)
     weights = A.colPivHouseholderQr().solve(b); 
-    
+    //weights = A.jacobiSvd(ComputeThinU | ComputeThinV).solve(b);
+
     // Reset A and b using the new policy derived from w, using the samples stored in D
     //loadAbFromD();    
 }
@@ -385,12 +416,20 @@ bool LSPIAgent::learn() {
     VectorXd lastWeights(NUM_FEATURES);
     lastWeights << weights;
 
+/*
+    cout << "D" << endl;
+    for (unsigned int i = 0; i < D.size(); i++){
+        cout << D[i] << endl;
+    }
+    cout << "END D" << endl;
+*/
+
     //cout << "Original weights\n" << lastWeights << endl;
 
     loadAbFromD();
 
-    //cout << "A\n" << A << endl;
-    //cout << "b\n" << b << endl;
+//    cout << "A\n" << A << endl;
+//    cout << "b\n" << b << endl;
 
     // Update weights. This first call assumes that A and b have been updating from the step and end episode methods
     updateWeights();
@@ -398,7 +437,7 @@ bool LSPIAgent::learn() {
     //cout << "New weights\n" << weights << endl;
 
     double weightDiff = weightDifference(lastWeights, weights);
-    cout << "Initial weight difference: " << weightDiff << endl;
+    //cout << "Initial weight difference: " << weightDiff << endl;
 
     const int MAX_ITERATIONS = 100;
     int iteration = 0;
@@ -407,10 +446,14 @@ bool LSPIAgent::learn() {
         lastWeights << weights;     // Keep track of current weights
         loadAbFromD();              // Update A and b with out new weights
         updateWeights();            // Calculate new weights
+        //cout << "A\n" << A << endl;
+        //cout << "b\n" << b << endl;
         weightDiff = weightDifference(lastWeights, weights);
     }
-    cout << "Final Weight difference: " << weightDifference(lastWeights, weights) << endl;
-    
+    //cout << "Final A\n" << A << endl;
+    //cout << "Final b\n" << b << endl;
+
+    //cout << "Final Weight difference: " << weightDifference(lastWeights, weights) << endl;
     cout << "Learned weights:\n" << weights << endl;
     
     return (iteration < MAX_ITERATIONS);    // Converged, or just ran out of iterations

@@ -13,7 +13,7 @@
 
 */
 
-#define NUM_FEATURES 12     // 10 state variables 
+#define NUM_FEATURES 17     // 10 state variables 
 //#define NUM_STATE_FEAT 10     // vestige definition
 #define NUM_ACTIONS 25
 #define MAX_CAPACITY 16777216 // 16MB   //2097152  // 2MB. Could probably raise this =) 
