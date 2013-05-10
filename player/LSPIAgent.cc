@@ -466,6 +466,9 @@ double LSPIAgent::weightDifference(VectorXd w1, VectorXd w2){
     return sqrt(dotProd);
 }
 
+void LSPIAgent::getSaveFile(char *saveFile){
+    strcpy(saveFile, weightsFile);
+}
 
 // TODO:
 void LSPIAgent::setParams(int iCutoffEpisodes, int iStopLearningEpisodes)

@@ -84,6 +84,8 @@ public:
   bool isLearning() {return bLearning; }
   bool learn();
   bool isRandomPolicy() { return randomPolicy; }
+    
+  void getSaveFile(char *saveFile);
 
 } ;
 

@@ -273,7 +273,7 @@ int WorldModel::passerStateVars(double state[], VecPosition targetLocation){
         // Skip yourself
         if (i != getAgentIndex()){
             char actionFile[256];
-            sprintf(actionFile, "agent%dDestination", i);
+            sprintf(actionFile, "destinations/agent%dDestination", i);
             double targetL;
             double targetW;
             ifstream inStream(actionFile, ios::in | ios::binary);

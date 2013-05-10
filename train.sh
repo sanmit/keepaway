@@ -22,12 +22,63 @@
 #
 #
 
-SARSA=weights/sarsaWeightsX 
-#sarsaHand5k/sarsaWeightsX
+export PATH=$PATH:/u/sanmit/rl/project/keepaway/tools
+
+SARSA_INPUT=weights/SARSA/sarsaRand5k/sarsaWeightsX 
+
 LSPI=weights/lspiWeightsX
 
-# Handcoded pass, learn getopen
-./keepaway.py --single-learner --monitor --keeper-policy hand --getopen-learn --getopen-output $LSPI --stop-after 5 --synch-mode 
+
+
+
+
+
+
+### VIEWING
+
+# 
+./keepaway.py --single-learner --monitor --keeper-policy hand --getopen-input weights/lspiWeights1 --stop-after 500 --synch-mode
+
+#./keepaway.py --monitor --keeper-policy hand --getopen-hand --synch-mode --stop-after 1000
+
+#./keepaway.py --monitor --keeper-policy hand --getopen-input weights/LSPI/handMultiLspi5k/lspiWeightsX --stop-after 1000 --synch-mode
+
+
+#./keepaway.py --monitor --keeper-policy hand --getopen-input weights/lspiWeights1 --stop-after 20 --load-same
+#./keepaway.py --monitor --keeper-policy hand --getopen-input $LSPI --stop-after 20
+#./keepaway.py --monitor --keeper-policy learned --keeper-input $SARSA_INPUT --getopen-input $LSPI --stop-after 5000 --synch-mode 
+
+#### BASELINE
+
+
+# Handcoded pass, random getopen (baseline)
+#./keepaway.py --monitor --keeper-policy hand --stop-after 1000 --synch-mode 
+
+
+### SINGLE LEARNER
+
+# Handcoded pass, single learn getopen (5k, 10k)
+#./keepaway.py --single-learner --monitor --keeper-policy hand --getopen-learn --getopen-output $LSPI --stop-after 5000 --synch-mode 
+
+
+### NORMAL (ALL 3) LEARNING. Training on Handcoded versus SARSA
+
+# Handcoded pass, learn getopen(5k, 10k)
+./keepaway.py --keeper-policy hand --getopen-learn --single-learner --monitor --getopen-output $LSPI --stop-after 5000 --synch-mode 
+
+# Sarsa pass, learn getopen (5k, 10k)
+#./keepaway.py --monitor --keeper-policy learned --keeper-input $SARSA_INPUT --getopen-learn --getopen-output $LSPI --stop-after 5000 --synch-mode 
+
+
+### IF TIME, COMMUNICATION VS NO COMMUNICATION VARIABLES
+
+#./keepaway.py --monitor --keeper-policy hand --getopen-learn --getopen-output $LSPI --stop-after 5000 --synch-mode 
+#./keepaway.py --monitor --keeper-policy learned --keeper-input $SARSA_INPUT --getopen-learn --getopen-output $LSPI --stop-after 5000 --synch-mode 
+
+
+
+
+####################################
 
 # Handcoded pass, continue getopen
 #./keepaway.py --monitor --keeper-policy hand --getopen-learn --getopen-input $LSPI --getopen-output $LSPI --stop-after 2500 --synch-mode 

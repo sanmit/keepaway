@@ -576,7 +576,6 @@ SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
         // HARDCODED. Note: Since only 2 players will be trying to get open at any time (and hence executing this call), it is ok to say something every cycle (the players are allowed to say and hear a message).
 
     // Communicate only if this action is different than the last action you took, that way there isn't overload.
-//    if (SA2->getLastAction() != action){
         char strMsg[MAX_SAY_MSG];
         SayMsgEncoder myencoder;
         myencoder.add(new PassToCoord(targetL, targetW));
@@ -585,20 +584,25 @@ SoccerCommand KeepawayPlayer::interpretTeammateAction(int action) {
         WM->setCommunicationString(strMsg);
     
         // File version - save your current destination to file
-        char actionFile[256];
-        sprintf(actionFile, "agent%dDestination", WM->getAgentIndex());
-        ofstream outStream(actionFile, ios::out | ios::binary | ios::trunc);
-        if (outStream){
-            outStream.write(reinterpret_cast<char*>(&targetL), sizeof targetL);
-            outStream.write(reinterpret_cast<char*>(&targetW), sizeof targetW);
-            outStream.close();
-        }
-        else
-            cout << "ERROR SAVING TO FILE" << endl;
-//    }
+        //if (SA2){
+            //char weightsFile[256];
+            //SA2->getSaveFile(weightsFile);
+            // HACKED. HARDCODED. We assume the weights file ends in a number!
+            //if (strlen(weightsFile) > 0){
+            //    weightsFile[strlen(weightsFile) - 1] = '\0';
+            //}
 
-    
-
+            char actionFile[256];
+            sprintf(actionFile, "destinations/agent%dDestination", WM->getAgentIndex());
+            ofstream outStream(actionFile, ios::out | ios::binary | ios::trunc);
+            if (outStream){
+                outStream.write(reinterpret_cast<char*>(&targetL), sizeof targetL);
+                outStream.write(reinterpret_cast<char*>(&targetW), sizeof targetW);
+                outStream.close();
+            }
+            else
+                cout << "ERROR SAVING TO FILE" << endl;
+        //} 
 
     // Read the message back
 /*    char serverSayMsg[256];
@@ -771,7 +775,7 @@ if (SA2){  // SA2
     
         
     char actionFile[256];
-    sprintf(actionFile, "agent%dDestination", WM->getAgentIndex());
+    sprintf(actionFile, "destinations/agent%dDestination", WM->getAgentIndex());
     ofstream outStream(actionFile, ios::out | ios::binary | ios::trunc);
     if (outStream){
         double targetL = target.getX();
